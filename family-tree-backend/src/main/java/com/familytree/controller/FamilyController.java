@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/family")
+@RequestMapping("/api/family")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
@@ -56,7 +56,7 @@ public class FamilyController {
             return ResponseEntity.ok(user);
         } catch (Exception e) {
             log.error("Failed to add member: ", e);
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(null);
         }
     }
     

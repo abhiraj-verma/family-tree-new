@@ -103,7 +103,8 @@ public class FamilyService {
         user.setEducation(userRequest.getEducation());
         user.setFamilyDoctor(userRequest.getFamilyDoctor());
         user.setDeathAnniversary(userRequest.getDeathAnniversary());
-        user.setLocation(family.getMemberIds().size());
+        user.setImageUrl(userRequest.getImageUrl());
+        user.setLocation(userRequest.getLocation() != null ? userRequest.getLocation() : family.getMemberIds().size());
         user.setIsActive(true);
         
         user = userRepository.save(user);
@@ -144,6 +145,13 @@ public class FamilyService {
                 // Update relationships
                 existingUser.getRelationships().getChildrenIds().add(newUser.getId());
                 newUser.getRelationships().getParentIds().add(existingUserId);
+                
+                // Set parent reference based on gender
+                if (existingUser.getGender() == User.Gender.MALE) {
+                    newUser.getRelationships().setFatherId(existingUserId);
+                } else if (existingUser.getGender() == User.Gender.FEMALE) {
+                    newUser.getRelationships().setMotherId(existingUserId);
+                }
                 break;
                 
             case "mother":
@@ -170,6 +178,36 @@ public class FamilyService {
                 existingUser.getRelationships().setFatherId(newUser.getId());
                 break;
                 
+            case "parent":
+                // Generic parent relationship - determine type based on gender
+                if (newUser.getGender() == User.Gender.MALE) {
+                    relationship.setFromId(newUser.getId());
+                    relationship.setToId(existingUserId);
+                    relationship.setType(Relationship.RelationType.FATHER);
+                    
+                    newUser.getRelationships().getChildrenIds().add(existingUserId);
+                    existingUser.getRelationships().getParentIds().add(newUser.getId());
+                    existingUser.getRelationships().setFatherId(newUser.getId());
+                } else if (newUser.getGender() == User.Gender.FEMALE) {
+                    relationship.setFromId(newUser.getId());
+                    relationship.setToId(existingUserId);
+                    relationship.setType(Relationship.RelationType.MOTHER);
+                    
+                    newUser.getRelationships().getChildrenIds().add(existingUserId);
+                    existingUser.getRelationships().getParentIds().add(newUser.getId());
+                    existingUser.getRelationships().setMotherId(newUser.getId());
+                } else {
+                    // Default to father for OTHER gender
+                    relationship.setFromId(newUser.getId());
+                    relationship.setToId(existingUserId);
+                    relationship.setType(Relationship.RelationType.FATHER);
+                    
+                    newUser.getRelationships().getChildrenIds().add(existingUserId);
+                    existingUser.getRelationships().getParentIds().add(newUser.getId());
+                    existingUser.getRelationships().setFatherId(newUser.getId());
+                }
+                break;
+                
             case "spouse":
                 // New user is spouse of existing user
                 relationship.setFromId(existingUserId);
@@ -187,6 +225,9 @@ public class FamilyService {
                 reverseRelationship.setType(Relationship.RelationType.SPOUSE);
                 family.getRelationships().add(reverseRelationship);
                 break;
+                
+            default:
+                throw new RuntimeException("Invalid relationship type: " + relationshipType);
         }
         
         // Save relationship

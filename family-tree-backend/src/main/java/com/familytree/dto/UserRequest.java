@@ -27,4 +27,6 @@ public class UserRequest {
     private String education;
     private String familyDoctor;
     private LocalDate deathAnniversary;
+    private String imageUrl;
+    private Integer location;
 }

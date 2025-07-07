@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/public")
+@RequestMapping("/api/public")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
