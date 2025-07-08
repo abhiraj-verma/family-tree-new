@@ -152,6 +152,38 @@ public class FamilyService {
                 } else if (existingUser.getGender() == User.Gender.FEMALE) {
                     newUser.getRelationships().setMotherId(existingUserId);
                 }
+                
+                // If existing user has a spouse, connect child to spouse as well
+                if (existingUser.getRelationships().getSpouseId() != null) {
+                    User spouse = userRepository.findById(existingUser.getRelationships().getSpouseId())
+                        .orElse(null);
+                    if (spouse != null) {
+                        // Add child to spouse's children list
+                        spouse.getRelationships().getChildrenIds().add(newUser.getId());
+                        
+                        // Add spouse to child's parent list
+                        if (!newUser.getRelationships().getParentIds().contains(spouse.getId())) {
+                            newUser.getRelationships().getParentIds().add(spouse.getId());
+                        }
+                        
+                        // Set appropriate parent reference
+                        if (spouse.getGender() == User.Gender.MALE) {
+                            newUser.getRelationships().setFatherId(spouse.getId());
+                        } else if (spouse.getGender() == User.Gender.FEMALE) {
+                            newUser.getRelationships().setMotherId(spouse.getId());
+                        }
+                        
+                        // Create relationship record
+                        Relationship spouseChildRel = new Relationship();
+                        spouseChildRel.setFromId(spouse.getId());
+                        spouseChildRel.setToId(newUser.getId());
+                        spouseChildRel.setType(spouse.getGender() == User.Gender.FEMALE ? 
+                            Relationship.RelationType.MOTHER : Relationship.RelationType.FATHER);
+                        family.getRelationships().add(spouseChildRel);
+                        
+                        userRepository.save(spouse);
+                    }
+                }
                 break;
                 
             case "mother":
@@ -250,33 +282,96 @@ public class FamilyService {
         user.setIsActive(false);
         userRepository.save(user);
         
-        // Remove relationships
+        // Remove from family member list
+        family.getMemberIds().remove(userId);
+        
+        // Clean up relationships in family
         family.getRelationships().removeIf(rel -> 
             rel.getFromId().equals(userId) || rel.getToId().equals(userId));
         
         // Update other users' relationships
         List<User> allMembers = userRepository.findAllById(family.getMemberIds());
         for (User member : allMembers) {
-            if (!member.getId().equals(userId)) {
+            if (!member.getId().equals(userId) && member.getIsActive()) {
                 User.Relationships relationships = member.getRelationships();
+                
+                // Remove from children lists
                 relationships.getChildrenIds().remove(userId);
+                
+                // Remove from parent lists
                 relationships.getParentIds().remove(userId);
+                
+                // Clear spouse relationship
                 if (userId.equals(relationships.getSpouseId())) {
                     relationships.setSpouseId(null);
                 }
+                
+                // Clear mother/father references
                 if (userId.equals(relationships.getMotherId())) {
                     relationships.setMotherId(null);
                 }
                 if (userId.equals(relationships.getFatherId())) {
                     relationships.setFatherId(null);
                 }
+                
                 userRepository.save(member);
             }
         }
         
+        // Clean up orphaned nodes - remove members with no relationships
+        cleanupOrphanedNodes(family);
+        
         familyRepository.save(family);
         
         log.info("Member removed successfully: {} from family: {}", user.getFullName(), family.getName());
+    }
+    
+    private void cleanupOrphanedNodes(Family family) {
+        List<User> activeMembers = userRepository.findAllById(family.getMemberIds())
+            .stream()
+            .filter(User::getIsActive)
+            .toList();
+        
+        // Find members with no relationships (orphaned nodes)
+        List<String> orphanedIds = new ArrayList<>();
+        
+        for (User member : activeMembers) {
+            User.Relationships rel = member.getRelationships();
+            boolean hasRelationships = false;
+            
+            // Check if member has any active relationships
+            if (rel.getSpouseId() != null && 
+                activeMembers.stream().anyMatch(m -> m.getId().equals(rel.getSpouseId()))) {
+                hasRelationships = true;
+            }
+            
+            if (!rel.getChildrenIds().isEmpty() && 
+                rel.getChildrenIds().stream().anyMatch(id -> 
+                    activeMembers.stream().anyMatch(m -> m.getId().equals(id)))) {
+                hasRelationships = true;
+            }
+            
+            if (!rel.getParentIds().isEmpty() && 
+                rel.getParentIds().stream().anyMatch(id -> 
+                    activeMembers.stream().anyMatch(m -> m.getId().equals(id)))) {
+                hasRelationships = true;
+            }
+            
+            // If no relationships and not the only member, mark as orphaned
+            if (!hasRelationships && activeMembers.size() > 1) {
+                orphanedIds.add(member.getId());
+            }
+        }
+        
+        // Remove orphaned nodes
+        for (String orphanedId : orphanedIds) {
+            family.getMemberIds().remove(orphanedId);
+            User orphanedUser = userRepository.findById(orphanedId).orElse(null);
+            if (orphanedUser != null) {
+                orphanedUser.setIsActive(false);
+                userRepository.save(orphanedUser);
+            }
+        }
     }
     
     public void updateFamilyName(String familyKey, String newName) {

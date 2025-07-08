@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useFamily } from '@/contexts/FamilyContext'
-import { User, Plus, Heart, UserPlus } from 'lucide-react'
+import { User, Plus, Heart, UserPlus, Trash2, Edit } from 'lucide-react'
 
 interface FamilyTreeCanvasProps {
   onAddMember: (parentId?: string, relationship?: string) => void
+  onEditMember?: (memberId: string) => void
 }
 
 interface TreeNode {
@@ -17,13 +18,15 @@ interface TreeNode {
   children: TreeNode[]
   spouse?: TreeNode
   parent?: TreeNode
+  spouseConnectorX?: number
 }
 
-export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps) {
-  const { family } = useFamily()
+export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTreeCanvasProps) {
+  const { family, removeMember } = useFamily()
   const canvasRef = useRef<HTMLDivElement>(null)
   const [treeNodes, setTreeNodes] = useState<TreeNode[]>([])
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     if (family && family.members.length > 0) {
@@ -51,7 +54,7 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
       })
     })
 
-    // Build relationships
+    // Build parent-child relationships
     activeMembers.forEach(member => {
       const node = nodeMap.get(member.id)
       if (!node) return
@@ -66,12 +69,18 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
           }
         })
       }
+    })
 
-      // Add spouse
+    // Build spouse relationships
+    activeMembers.forEach(member => {
+      const node = nodeMap.get(member.id)
+      if (!node || node.spouse) return // Skip if already has spouse assigned
+
       if (member.relationships?.spouseId) {
         const spouseNode = nodeMap.get(member.relationships.spouseId)
-        if (spouseNode) {
+        if (spouseNode && !spouseNode.spouse) {
           node.spouse = spouseNode
+          spouseNode.spouse = node
         }
       }
     })
@@ -79,46 +88,76 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
     // Find root nodes (members with no parents)
     const rootNodes = Array.from(nodeMap.values()).filter(node => !node.parent)
 
-    // Calculate positions
+    // Calculate positions with improved layout
     const positionedNodes = calculatePositions(rootNodes)
     setTreeNodes(positionedNodes)
   }
 
   const calculatePositions = (rootNodes: TreeNode[]): TreeNode[] => {
-    const nodeWidth = 200
-    const nodeHeight = 120
-    const levelHeight = 180
-    const siblingSpacing = 50
+    const nodeWidth = 220
+    const nodeHeight = 140
+    const levelHeight = 200
+    const siblingSpacing = 60
+    const spouseSpacing = 40
+
+    const calculateSubtreeWidth = (node: TreeNode): number => {
+      if (node.children.length === 0) {
+        return nodeWidth + (node.spouse ? nodeWidth + spouseSpacing : 0)
+      }
+
+      const childrenWidth = node.children.reduce((total, child, index) => {
+        const childWidth = calculateSubtreeWidth(child)
+        return total + childWidth + (index > 0 ? siblingSpacing : 0)
+      }, 0)
+
+      const nodeAndSpouseWidth = nodeWidth + (node.spouse ? nodeWidth + spouseSpacing : 0)
+      return Math.max(nodeAndSpouseWidth, childrenWidth)
+    }
 
     const positionNode = (node: TreeNode, x: number, y: number, level: number) => {
-      node.x = x
-      node.y = y
       node.level = level
+
+      if (node.spouse) {
+        // Position couple side by side
+        const coupleWidth = nodeWidth * 2 + spouseSpacing
+        node.x = x - coupleWidth / 2 + nodeWidth / 2
+        node.spouse.x = node.x + nodeWidth + spouseSpacing
+        node.y = y
+        node.spouse.y = y
+        node.spouse.level = level
+
+        // Store connector position for the horizontal line
+        node.spouseConnectorX = node.x + nodeWidth / 2 + (spouseSpacing + nodeWidth) / 2
+      } else {
+        node.x = x - nodeWidth / 2
+        node.y = y
+      }
 
       // Position children
       if (node.children.length > 0) {
-        const totalChildrenWidth = (node.children.length - 1) * (nodeWidth + siblingSpacing)
+        const totalChildrenWidth = node.children.reduce((total, child, index) => {
+          const childWidth = calculateSubtreeWidth(child)
+          return total + childWidth + (index > 0 ? siblingSpacing : 0)
+        }, 0)
+
         let childX = x - totalChildrenWidth / 2
-
+        
         node.children.forEach((child, index) => {
-          positionNode(child, childX, y + levelHeight, level + 1)
-          childX += nodeWidth + siblingSpacing
+          const childWidth = calculateSubtreeWidth(child)
+          const childCenterX = childX + childWidth / 2
+          
+          positionNode(child, childCenterX, y + levelHeight, level + 1)
+          childX += childWidth + siblingSpacing
         })
-      }
-
-      // Position spouse next to the node
-      if (node.spouse) {
-        node.spouse.x = x + nodeWidth + 30
-        node.spouse.y = y
-        node.spouse.level = level
       }
     }
 
     // Position each root tree
     let currentX = 0
     rootNodes.forEach((rootNode, index) => {
-      positionNode(rootNode, currentX, 50, 0)
-      currentX += 400 // Space between different family trees
+      const treeWidth = calculateSubtreeWidth(rootNode)
+      positionNode(rootNode, currentX + treeWidth / 2, 50, 0)
+      currentX += treeWidth + 100 // Space between different family trees
     })
 
     // Flatten all nodes
@@ -150,49 +189,44 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
     const connections: JSX.Element[] = []
 
     treeNodes.forEach(node => {
-      // Parent-child connections
-      node.children.forEach(child => {
-        const startX = node.x + 100 // Center of parent node
-        const startY = node.y + 120 // Bottom of parent node
-        const endX = child.x + 100 // Center of child node
-        const endY = child.y // Top of child node
+      // Spouse connections (horizontal line with heart)
+      if (node.spouse && node.spouseConnectorX) {
+        const lineY = node.y + 70 // Middle of the node
+        const startX = node.x + nodeWidth
+        const endX = node.spouse.x
+        const heartX = node.spouseConnectorX
 
+        // Horizontal line between spouses
         connections.push(
           <svg
-            key={`line-${node.id}-${child.id}`}
+            key={`spouse-line-${node.id}`}
             className="absolute pointer-events-none"
             style={{
-              left: Math.min(startX, endX),
-              top: Math.min(startY, endY),
-              width: Math.abs(endX - startX) + 2,
-              height: Math.abs(endY - startY) + 2,
+              left: startX,
+              top: lineY - 1,
+              width: endX - startX,
+              height: 2,
             }}
           >
             <line
-              x1={startX - Math.min(startX, endX)}
-              y1={startY - Math.min(startY, endY)}
-              x2={endX - Math.min(startX, endX)}
-              y2={endY - Math.min(startY, endY)}
+              x1={0}
+              y1={1}
+              x2={endX - startX}
+              y2={1}
               stroke="#6b7280"
               strokeWidth="2"
-              strokeDasharray="5,5"
             />
           </svg>
         )
-      })
 
-      // Spouse connections (heart symbol)
-      if (node.spouse) {
-        const heartX = node.x + 215
-        const heartY = node.y + 50
-
+        // Heart symbol
         connections.push(
           <div
-            key={`heart-${node.id}-${node.spouse.id}`}
+            key={`heart-${node.id}`}
             className="absolute flex items-center justify-center"
             style={{
-              left: heartX,
-              top: heartY,
+              left: heartX - 10,
+              top: lineY - 10,
               width: 20,
               height: 20,
             }}
@@ -200,6 +234,183 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
             <Heart className="w-5 h-5 text-red-500 fill-red-500" />
           </div>
         )
+
+        // Vertical line down from couple to children
+        if (node.children.length > 0) {
+          const verticalStartY = lineY + 1
+          const verticalEndY = node.children[0].y - 20
+
+          connections.push(
+            <svg
+              key={`couple-to-children-${node.id}`}
+              className="absolute pointer-events-none"
+              style={{
+                left: heartX - 1,
+                top: verticalStartY,
+                width: 2,
+                height: verticalEndY - verticalStartY,
+              }}
+            >
+              <line
+                x1={1}
+                y1={0}
+                x2={1}
+                y2={verticalEndY - verticalStartY}
+                stroke="#6b7280"
+                strokeWidth="2"
+              />
+            </svg>
+          )
+
+          // Horizontal line connecting all children
+          if (node.children.length > 1) {
+            const firstChild = node.children[0]
+            const lastChild = node.children[node.children.length - 1]
+            const childrenLineY = verticalEndY
+            const childrenLineStartX = firstChild.x + nodeWidth / 2
+            const childrenLineEndX = lastChild.x + nodeWidth / 2
+
+            connections.push(
+              <svg
+                key={`children-line-${node.id}`}
+                className="absolute pointer-events-none"
+                style={{
+                  left: childrenLineStartX,
+                  top: childrenLineY - 1,
+                  width: childrenLineEndX - childrenLineStartX,
+                  height: 2,
+                }}
+              >
+                <line
+                  x1={0}
+                  y1={1}
+                  x2={childrenLineEndX - childrenLineStartX}
+                  y2={1}
+                  stroke="#6b7280"
+                  strokeWidth="2"
+                />
+              </svg>
+            )
+          }
+
+          // Vertical lines from horizontal line to each child
+          node.children.forEach(child => {
+            const childLineX = child.x + nodeWidth / 2
+            const childLineStartY = verticalEndY
+            const childLineEndY = child.y
+
+            connections.push(
+              <svg
+                key={`to-child-${child.id}`}
+                className="absolute pointer-events-none"
+                style={{
+                  left: childLineX - 1,
+                  top: childLineStartY,
+                  width: 2,
+                  height: childLineEndY - childLineStartY,
+                }}
+              >
+                <line
+                  x1={1}
+                  y1={0}
+                  x2={1}
+                  y2={childLineEndY - childLineStartY}
+                  stroke="#6b7280"
+                  strokeWidth="2"
+                />
+              </svg>
+            )
+          })
+        }
+      } else if (!node.spouse && node.children.length > 0) {
+        // Single parent connections
+        const parentCenterX = node.x + nodeWidth / 2
+        const parentBottomY = node.y + nodeHeight
+
+        // Vertical line down from parent
+        const verticalEndY = node.children[0].y - 20
+
+        connections.push(
+          <svg
+            key={`single-parent-${node.id}`}
+            className="absolute pointer-events-none"
+            style={{
+              left: parentCenterX - 1,
+              top: parentBottomY,
+              width: 2,
+              height: verticalEndY - parentBottomY,
+            }}
+          >
+            <line
+              x1={1}
+              y1={0}
+              x2={1}
+              y2={verticalEndY - parentBottomY}
+              stroke="#6b7280"
+              strokeWidth="2"
+            />
+          </svg>
+        )
+
+        // Horizontal line connecting all children
+        if (node.children.length > 1) {
+          const firstChild = node.children[0]
+          const lastChild = node.children[node.children.length - 1]
+          const childrenLineY = verticalEndY
+          const childrenLineStartX = firstChild.x + nodeWidth / 2
+          const childrenLineEndX = lastChild.x + nodeWidth / 2
+
+          connections.push(
+            <svg
+              key={`single-children-line-${node.id}`}
+              className="absolute pointer-events-none"
+              style={{
+                left: childrenLineStartX,
+                top: childrenLineY - 1,
+                width: childrenLineEndX - childrenLineStartX,
+                height: 2,
+              }}
+            >
+              <line
+                x1={0}
+                y1={1}
+                x2={childrenLineEndX - childrenLineStartX}
+                y2={1}
+                stroke="#6b7280"
+                strokeWidth="2"
+              />
+            </svg>
+          )
+        }
+
+        // Vertical lines to each child
+        node.children.forEach(child => {
+          const childLineX = child.x + nodeWidth / 2
+          const childLineStartY = verticalEndY
+          const childLineEndY = child.y
+
+          connections.push(
+            <svg
+              key={`single-to-child-${child.id}`}
+              className="absolute pointer-events-none"
+              style={{
+                left: childLineX - 1,
+                top: childLineStartY,
+                width: 2,
+                height: childLineEndY - childLineStartY,
+              }}
+            >
+              <line
+                x1={1}
+                y1={0}
+                x2={1}
+                y2={childLineEndY - childLineStartY}
+                stroke="#6b7280"
+                strokeWidth="2"
+              />
+            </svg>
+          )
+        })
       }
     })
 
@@ -208,6 +419,16 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
 
   const handleNodeClick = (nodeId: string) => {
     setSelectedNode(selectedNode === nodeId ? null : nodeId)
+  }
+
+  const handleDeleteMember = async (memberId: string) => {
+    try {
+      await removeMember(memberId)
+      setShowDeleteConfirm(null)
+      setSelectedNode(null)
+    } catch (error) {
+      console.error('Failed to delete member:', error)
+    }
   }
 
   if (!family || family.members.length === 0) {
@@ -230,14 +451,17 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
     )
   }
 
+  const canvasWidth = Math.max(1400, Math.max(...treeNodes.map(n => n.x)) + 300)
+  const canvasHeight = Math.max(700, Math.max(...treeNodes.map(n => n.y)) + 200)
+
   return (
     <div className="relative bg-gradient-to-br from-gray-50 to-white rounded-xl p-6 min-h-[600px] overflow-auto">
       <div
         ref={canvasRef}
         className="relative"
         style={{
-          width: Math.max(1200, Math.max(...treeNodes.map(n => n.x)) + 250),
-          height: Math.max(600, Math.max(...treeNodes.map(n => n.y)) + 150),
+          width: canvasWidth,
+          height: canvasHeight,
         }}
       >
         {/* Render connections */}
@@ -250,17 +474,25 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
             className={`absolute cursor-pointer transition-all duration-200 ${
               selectedNode === node.id ? 'scale-105 z-10' : 'hover:scale-102'
             }`}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                handleNodeClick(node.id)
+              }
+            }}
             style={{
               left: node.x,
               top: node.y,
-              width: 200,
-              height: 120,
+              width: 220,
+              height: 140,
             }}
             onClick={() => handleNodeClick(node.id)}
           >
             <div className={`w-full h-full bg-gradient-to-br ${getGenderColor(node.member.gender)} rounded-xl shadow-lg border-2 ${
               selectedNode === node.id ? 'border-emerald-400' : 'border-white'
-            } p-4 text-white`}>
+            } p-4 text-white relative`}>
               {/* Member Info */}
               <div className="flex items-center space-x-2 mb-2">
                 <User className="w-5 h-5" />
@@ -283,7 +515,7 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
 
               {/* Action buttons when selected */}
               {selectedNode === node.id && (
-                <div className="absolute -bottom-12 left-0 right-0 flex justify-center space-x-2">
+                <div className="absolute -bottom-16 left-0 right-0 flex justify-center space-x-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -291,6 +523,7 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
                     }}
                     className="bg-emerald-500 text-white p-2 rounded-full shadow-lg hover:bg-emerald-600 transition-colors"
                     title="Add Child"
+                    aria-label="Add Child"
                   >
                     <UserPlus className="w-4 h-4" />
                   </button>
@@ -303,6 +536,7 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
                       }}
                       className="bg-pink-500 text-white p-2 rounded-full shadow-lg hover:bg-pink-600 transition-colors"
                       title="Add Spouse"
+                      aria-label="Add Spouse"
                     >
                       <Heart className="w-4 h-4" />
                     </button>
@@ -315,8 +549,35 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
                     }}
                     className="bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
                     title="Add Parent"
+                    aria-label="Add Parent"
                   >
                     <Plus className="w-4 h-4" />
+                  </button>
+
+                  {onEditMember && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onEditMember(node.id)
+                      }}
+                      className="bg-yellow-500 text-white p-2 rounded-full shadow-lg hover:bg-yellow-600 transition-colors"
+                      title="Edit Member"
+                      aria-label="Edit Member"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowDeleteConfirm(node.id)
+                    }}
+                    className="bg-red-500 text-white p-2 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                    title="Delete Member"
+                    aria-label="Delete Member"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -325,6 +586,42 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
         ))}
       </div>
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Family Member</h3>
+                <p className="text-gray-600">This action cannot be undone.</p>
+              </div>
+            </div>
+            
+            <p className="text-gray-700 mb-6">
+              Are you sure you want to delete this family member? All relationships will be updated accordingly.
+            </p>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteMember(showDeleteConfirm)}
+                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Delete Member
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Instructions */}
       <div className="absolute top-4 right-4 bg-white bg-opacity-90 rounded-lg p-3 text-sm text-gray-600 max-w-xs">
         <p className="font-medium mb-1">How to use:</p>
@@ -332,7 +629,8 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
           <li>• Click on a member to see options</li>
           <li>• Add children, spouse, or parents</li>
           <li>• Heart symbols show marriages</li>
-          <li>• Dotted lines show family relationships</li>
+          <li>• Straight lines show family relationships</li>
+          <li>• Delete members to clean up the tree</li>
         </ul>
       </div>
     </div>
