@@ -3,8 +3,13 @@ import Cookies from 'js-cookie'
 import { mockAuthAPI, mockFamilyAPI, mockPublicAPI, mockImageAPI } from './mockApi'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
-const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === 'true' || true // Set to true for testing
+const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === 'true'
 
+console.log('API Configuration:', {
+  API_URL,
+  USE_MOCK_API,
+  NEXT_PUBLIC_USE_MOCK_API: process.env.NEXT_PUBLIC_USE_MOCK_API
+})
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,

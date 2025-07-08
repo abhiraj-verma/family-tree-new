@@ -127,6 +127,7 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
     if (!user?.familyKey) throw new Error('No family key available')
     
     try {
+      console.log('Adding member:', { userData, parentId, relationshipType, familyKey: user.familyKey })
       const response = await familyAPI.addMember(
         user.familyKey,
         userData,
@@ -134,10 +135,12 @@ export const FamilyProvider: React.FC<FamilyProviderProps> = ({ children }) => {
         relationshipType
       )
       
+      console.log('Member added successfully:', response.data)
       // Reload family data
       await loadFamily()
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to add member')
+      console.error('Add member error:', error)
+      throw new Error(error.response?.data?.message || error.message || 'Failed to add member')
     }
   }
 

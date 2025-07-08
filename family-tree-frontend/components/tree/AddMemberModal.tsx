@@ -61,9 +61,12 @@ export default function AddMemberModal({ parentId, relationship, onClose }: AddM
         rewards: formData.rewards || undefined,
       }
 
+      console.log('Submitting member data:', userData)
       await addMember(userData, parentId || undefined, formData.relationship)
+      console.log('Member added successfully')
       onClose()
     } catch (err: any) {
+      console.error('Failed to add member:', err)
       setError(err.message || 'Failed to add member')
     } finally {
       setLoading(false)

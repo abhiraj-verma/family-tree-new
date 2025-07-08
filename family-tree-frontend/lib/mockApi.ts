@@ -240,6 +240,17 @@ const updateRelationships = (family: any, newMember: any, parentId?: string, rel
   const parent = family.members.find((m: any) => m.id === parentId)
   if (!parent) return
 
+  // Initialize relationships if they don't exist
+  if (!parent.relationships) {
+    parent.relationships = {
+      spouseId: undefined,
+      childrenIds: [],
+      parentIds: [],
+      motherId: undefined,
+      fatherId: undefined
+    }
+  }
+
   switch (relationshipType.toLowerCase()) {
     case 'child':
       // Add child to parent
@@ -325,11 +336,9 @@ const updateRelationships = (family: any, newMember: any, parentId?: string, rel
   }
 }
 
-// Mock API implementation
-export const mockAPI = {
-  // Auth endpoints
-  auth: {
-    register: async (data: any) => {
+// Export individual API modules for easier use
+export const mockAuthAPI = {
+  register: async (data: any) => {
       await delay(500)
       
       // Check if username exists
@@ -363,12 +372,13 @@ export const mockAPI = {
       }
     },
 
-    login: async (data: any) => {
+  login: async (data: any) => {
       await delay(500)
       
       const user = findUserByUsername(data.username)
       if (!user || user.password !== data.password) {
-        throw new Error('Invalid credentials')
+        const error = new Error('Invalid credentials')
+        throw { response: { data: { message: 'Invalid username or password' } } }
       }
       
       // Update token
@@ -386,7 +396,7 @@ export const mockAPI = {
       }
     },
 
-    googleSignIn: async (token: string) => {
+  googleSignIn: async (token: string) => {
       await delay(500)
       
       const newUser = {
@@ -415,15 +425,14 @@ export const mockAPI = {
       }
     },
 
-    logout: async () => {
+  logout: async () => {
       await delay(200)
       return { data: {} }
     }
-  },
+}
 
-  // Family endpoints
-  family: {
-    createFamily: async (familyName: string) => {
+export const mockFamilyAPI = {
+  createFamily: async (familyName: string) => {
       await delay(500)
       
       const familyKey = `family_${Date.now()}`
@@ -442,23 +451,25 @@ export const mockAPI = {
       return { data: newFamily }
     },
 
-    getFamily: async (familyKey: string) => {
+  getFamily: async (familyKey: string) => {
       await delay(300)
       
       const family = findFamilyByKey(familyKey)
       if (!family) {
-        throw new Error('Family not found')
+        const error = new Error('Family not found')
+        throw { response: { data: { message: 'Family not found' } } }
       }
       
       return { data: family }
     },
 
-    addMember: async (familyKey: string, userData: any, parentId?: string, relationshipType?: string) => {
+  addMember: async (familyKey: string, userData: any, parentId?: string, relationshipType?: string) => {
       await delay(500)
       
       const family = findFamilyByKey(familyKey)
       if (!family) {
-        throw new Error('Family not found')
+        const error = new Error('Family not found')
+        throw { response: { data: { message: 'Family not found' } } }
       }
       
       const newMember = {
@@ -486,17 +497,19 @@ export const mockAPI = {
       return { data: newMember }
     },
 
-    removeMember: async (familyKey: string, userId: string) => {
+  removeMember: async (familyKey: string, userId: string) => {
       await delay(300)
       
       const family = findFamilyByKey(familyKey)
       if (!family) {
-        throw new Error('Family not found')
+        const error = new Error('Family not found')
+        throw { response: { data: { message: 'Family not found' } } }
       }
       
       const memberIndex = family.members.findIndex((m: any) => m.id === userId)
       if (memberIndex === -1) {
-        throw new Error('Member not found')
+        const error = new Error('Member not found')
+        throw { response: { data: { message: 'Member not found' } } }
       }
       
       // Mark as inactive instead of removing
@@ -529,12 +542,13 @@ export const mockAPI = {
       return { data: {} }
     },
 
-    updateFamilyName: async (familyKey: string, newName: string) => {
+  updateFamilyName: async (familyKey: string, newName: string) => {
       await delay(300)
       
       const family = findFamilyByKey(familyKey)
       if (!family) {
-        throw new Error('Family not found')
+        const error = new Error('Family not found')
+        throw { response: { data: { message: 'Family not found' } } }
       }
       
       family.name = newName
@@ -548,26 +562,25 @@ export const mockAPI = {
       
       return { data: {} }
     }
-  },
+}
 
-  // Public endpoints
-  public: {
-    getPublicFamily: async (token: string, familyName: string) => {
+export const mockPublicAPI = {
+  getPublicFamily: async (token: string, familyName: string) => {
       await delay(400)
       
       // For mock, just return the first family
       const family = mockFamilies[0]
       if (!family) {
-        throw new Error('Family not found')
+        const error = new Error('Family not found')
+        throw { response: { data: { message: 'Family not found' } } }
       }
       
       return { data: family }
     }
-  },
+}
 
-  // Image endpoints
-  image: {
-    uploadImage: async (userId: string, file: File) => {
+export const mockImageAPI = {
+  uploadImage: async (userId: string, file: File) => {
       await delay(1000)
       
       // Mock image URL
@@ -576,15 +589,8 @@ export const mockAPI = {
       return { data: imageUrl }
     },
 
-    deleteImage: async (imageUrl: string) => {
+  deleteImage: async (imageUrl: string) => {
       await delay(300)
       return { data: {} }
     }
-  }
 }
-
-// Export individual API modules for easier use
-export const mockAuthAPI = mockAPI.auth
-export const mockFamilyAPI = mockAPI.family
-export const mockPublicAPI = mockAPI.public
-export const mockImageAPI = mockAPI.image

@@ -75,7 +75,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser({ ...userData, token })
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed')
+      console.error('Login error:', error)
+      throw new Error(error.response?.data?.message || error.message || 'Login failed')
     }
   }
 
@@ -97,7 +98,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser({ ...userData, token })
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed')
+      console.error('Registration error:', error)
+      throw new Error(error.response?.data?.message || error.message || 'Registration failed')
     }
   }
 
@@ -115,7 +117,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser({ ...userData, token })
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Google sign-in failed')
+      console.error('Google sign-in error:', error)
+      throw new Error(error.response?.data?.message || error.message || 'Google sign-in failed')
     }
   }
 
