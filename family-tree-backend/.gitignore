@@ -32,8 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 
-### Application ###
+### Application specific ###
 application-local.yml
+application-dev.yml
+application-prod.yml
 logs/
 *.log
 
