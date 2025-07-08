@@ -1,7 +1,9 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
+import { mockAuthAPI, mockFamilyAPI, mockPublicAPI, mockImageAPI } from './mockApi'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+const USE_MOCK_API = process.env.NEXT_PUBLIC_USE_MOCK_API === 'true' || true // Set to true for testing
 
 // Create axios instance
 const api = axios.create({
@@ -47,24 +49,24 @@ export const authAPI = {
     password: string
     email?: string
     mobile?: string
-  }) => api.post('/auth/register', data),
+  }) => USE_MOCK_API ? mockAuthAPI.register(data) : api.post('/auth/register', data),
 
   login: (data: { username: string; password: string }) =>
-    api.post('/auth/login', data),
+    USE_MOCK_API ? mockAuthAPI.login(data) : api.post('/auth/login', data),
 
   googleSignIn: (token: string) =>
-    api.post('/auth/google-signin', token),
+    USE_MOCK_API ? mockAuthAPI.googleSignIn(token) : api.post('/auth/google-signin', token),
 
-  logout: () => api.post('/auth/logout'),
+  logout: () => USE_MOCK_API ? mockAuthAPI.logout() : api.post('/auth/logout'),
 }
 
 // Family API
 export const familyAPI = {
   createFamily: (familyName: string) =>
-    api.post('/family/create', null, { params: { familyName } }),
+    USE_MOCK_API ? mockFamilyAPI.createFamily(familyName) : api.post('/family/create', null, { params: { familyName } }),
 
   getFamily: (familyKey: string) =>
-    api.get(`/family/${familyKey}`),
+    USE_MOCK_API ? mockFamilyAPI.getFamily(familyKey) : api.get(`/family/${familyKey}`),
 
   addMember: (
     familyKey: string,
@@ -72,26 +74,31 @@ export const familyAPI = {
     parentId?: string,
     relationshipType?: string
   ) =>
-    api.post(`/family/${familyKey}/members`, userData, {
-      params: { parentId, relationshipType },
-    }),
+    USE_MOCK_API 
+      ? mockFamilyAPI.addMember(familyKey, userData, parentId, relationshipType)
+      : api.post(`/family/${familyKey}/members`, userData, {
+          params: { parentId, relationshipType },
+        }),
 
   removeMember: (familyKey: string, userId: string) =>
-    api.delete(`/family/${familyKey}/members/${userId}`),
+    USE_MOCK_API ? mockFamilyAPI.removeMember(familyKey, userId) : api.delete(`/family/${familyKey}/members/${userId}`),
 
   updateFamilyName: (familyKey: string, newName: string) =>
-    api.put(`/family/${familyKey}/name`, null, { params: { newName } }),
+    USE_MOCK_API ? mockFamilyAPI.updateFamilyName(familyKey, newName) : api.put(`/family/${familyKey}/name`, null, { params: { newName } }),
 }
 
 // Public API
 export const publicAPI = {
   getPublicFamily: (token: string, familyName: string) =>
-    api.get(`/public/family/${token}`, { params: { familyName } }),
+    USE_MOCK_API ? mockPublicAPI.getPublicFamily(token, familyName) : api.get(`/public/family/${token}`, { params: { familyName } }),
 }
 
 // Image API
 export const imageAPI = {
   uploadImage: (userId: string, file: File) => {
+    if (USE_MOCK_API) {
+      return mockImageAPI.uploadImage(userId, file)
+    }
     const formData = new FormData()
     formData.append('file', file)
     return api.post(`/images/upload/${userId}`, formData, {
@@ -100,7 +107,7 @@ export const imageAPI = {
   },
 
   deleteImage: (imageUrl: string) =>
-    api.delete('/images/delete', { params: { imageUrl } }),
+    USE_MOCK_API ? mockImageAPI.deleteImage(imageUrl) : api.delete('/images/delete', { params: { imageUrl } }),
 }
 
 export default api

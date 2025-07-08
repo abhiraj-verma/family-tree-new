@@ -33,7 +33,44 @@ Create a `.env.local` file in the root directory:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8080/api
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Mock API for testing (set to 'true' to use mock data)
+NEXT_PUBLIC_USE_MOCK_API=true
 ```
+
+## Testing with Mock API
+
+The application includes comprehensive mock API responses for testing all functionality without running the backend:
+
+1. **Enable Mock Mode**: Set `NEXT_PUBLIC_USE_MOCK_API=true` in your `.env.local` file
+2. **Pre-loaded Data**: Includes a sample family with 8 members across 3 generations
+3. **Full Functionality**: All features work including:
+   - User registration and login
+   - Family creation and management
+   - Adding/removing family members
+   - Relationship management (parent, child, spouse)
+   - Family tree visualization
+   - Public sharing
+
+### Mock Data Structure
+
+The mock data includes:
+- **John & Jane Doe** (married couple, parents)
+- **Alice & Bob Doe** (their children)
+- **Robert & Mary Doe** (John's parents)
+- **William & Susan Smith** (Jane's parents)
+
+This provides a realistic family tree structure for testing all UI components and interactions.
+
+### Testing Scenarios
+
+You can test:
+1. **Login** with username: `johndoe`, password: `password123`
+2. **Add new members** with various relationships
+3. **Tree visualization** with multiple generations
+4. **Relationship connections** (spouse, parent-child)
+5. **Family management** (rename, share)
+6. **Public sharing** functionality
 
 ## Running the Application
 

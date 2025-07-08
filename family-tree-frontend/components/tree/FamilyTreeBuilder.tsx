@@ -34,9 +34,16 @@ export default function FamilyTreeBuilder() {
   }
 
   const handleSaveFamily = () => {
-    // In a real app, this would save to the backend
-    // For now, just show a success message
-    alert('Family tree saved successfully!')
+    // Show success message with better UX
+    const notification = document.createElement('div')
+    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300'
+    notification.textContent = 'Family tree saved successfully!'
+    document.body.appendChild(notification)
+    
+    setTimeout(() => {
+      notification.style.opacity = '0'
+      setTimeout(() => document.body.removeChild(notification), 300)
+    }, 2000)
   }
 
   if (loading) {
