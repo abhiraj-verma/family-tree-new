@@ -10,7 +10,7 @@ interface FamilyTreeViewProps {
         {/* Tree Visualization */}
         <div className="p-6">
           {viewMode === 'canvas' ? (
--            <FamilyTreeCanvas onAddMember={onAddMember} onEditMember={onEditMember} />
+            <FamilyTreeCanvas onAddMember={onAddMember} onEditMember={onEditMember} />
           ) : (
             <div className="bg-gradient-to-b from-gray-50 to-white p-6 rounded-xl">
               <GridView />
