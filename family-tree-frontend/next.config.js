@@ -3,16 +3,17 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   images: {
-    domains: ['s3.wasabisys.com', 'localhost'],
-    unoptimized: true
-  },
-  async rewrites() {
-    return [
+    remotePatterns: [
       {
-        source: '/api/:path*',
-        destination: 'http://localhost:8080/api/:path*'
+        protocol: 'https',
+        hostname: 's3.wasabisys.com',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
       }
-    ]
+    ],
+    unoptimized: true
   },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
