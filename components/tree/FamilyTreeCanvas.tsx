@@ -97,8 +97,8 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
     const nodeWidth = 220
     const nodeHeight = 140
     const levelHeight = 200
-    const siblingSpacing = 60
-    const spouseSpacing = 40
+    const siblingSpacing = 80
+    const spouseSpacing = 50
 
     const calculateSubtreeWidth = (node: TreeNode): number => {
       if (node.children.length === 0) {
@@ -157,7 +157,7 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
     rootNodes.forEach((rootNode, index) => {
       const treeWidth = calculateSubtreeWidth(rootNode)
       positionNode(rootNode, currentX + treeWidth / 2, 50, 0)
-      currentX += treeWidth + 100 // Space between different family trees
+      currentX += treeWidth + 150 // Space between different family trees
     })
 
     // Flatten all nodes
@@ -189,7 +189,7 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
     const connections: JSX.Element[] = []
 
     treeNodes.forEach(node => {
-      // Spouse connections (horizontal line with heart)
+      // SPOUSE CONNECTIONS - Horizontal line with heart
       if (node.spouse && node.spouseConnectorX) {
         const lineY = node.y + 70 // Middle of the node
         const startX = node.x + nodeWidth
@@ -198,28 +198,19 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
 
         // Horizontal line between spouses
         connections.push(
-          <svg
+          <div
             key={`spouse-line-${node.id}`}
-            className="absolute pointer-events-none"
+            className="absolute bg-gray-400"
             style={{
               left: startX,
               top: lineY - 1,
               width: endX - startX,
               height: 2,
             }}
-          >
-            <line
-              x1={0}
-              y1={1}
-              x2={endX - startX}
-              y2={1}
-              stroke="#6b7280"
-              strokeWidth="2"
-            />
-          </svg>
+          />
         )
 
-        // Heart symbol
+        // Heart symbol in the middle
         connections.push(
           <div
             key={`heart-${node.id}`}
@@ -235,34 +226,26 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
           </div>
         )
 
-        // Vertical line down from couple to children
+        // CHILDREN CONNECTIONS from couple
         if (node.children.length > 0) {
-          const verticalStartY = lineY + 1
+          // Vertical line down from couple center
+          const verticalStartY = lineY + 2
           const verticalEndY = node.children[0].y - 20
 
           connections.push(
-            <svg
+            <div
               key={`couple-to-children-${node.id}`}
-              className="absolute pointer-events-none"
+              className="absolute bg-gray-400"
               style={{
                 left: heartX - 1,
                 top: verticalStartY,
                 width: 2,
                 height: verticalEndY - verticalStartY,
               }}
-            >
-              <line
-                x1={1}
-                y1={0}
-                x2={1}
-                y2={verticalEndY - verticalStartY}
-                stroke="#6b7280"
-                strokeWidth="2"
-              />
-            </svg>
+            />
           )
 
-          // Horizontal line connecting all children
+          // Horizontal line connecting all children (if more than one)
           if (node.children.length > 1) {
             const firstChild = node.children[0]
             const lastChild = node.children[node.children.length - 1]
@@ -271,25 +254,16 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
             const childrenLineEndX = lastChild.x + nodeWidth / 2
 
             connections.push(
-              <svg
+              <div
                 key={`children-line-${node.id}`}
-                className="absolute pointer-events-none"
+                className="absolute bg-gray-400"
                 style={{
                   left: childrenLineStartX,
                   top: childrenLineY - 1,
                   width: childrenLineEndX - childrenLineStartX,
                   height: 2,
                 }}
-              >
-                <line
-                  x1={0}
-                  y1={1}
-                  x2={childrenLineEndX - childrenLineStartX}
-                  y2={1}
-                  stroke="#6b7280"
-                  strokeWidth="2"
-                />
-              </svg>
+              />
             )
           }
 
@@ -300,59 +274,41 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
             const childLineEndY = child.y
 
             connections.push(
-              <svg
+              <div
                 key={`to-child-${child.id}`}
-                className="absolute pointer-events-none"
+                className="absolute bg-gray-400"
                 style={{
                   left: childLineX - 1,
                   top: childLineStartY,
                   width: 2,
                   height: childLineEndY - childLineStartY,
                 }}
-              >
-                <line
-                  x1={1}
-                  y1={0}
-                  x2={1}
-                  y2={childLineEndY - childLineStartY}
-                  stroke="#6b7280"
-                  strokeWidth="2"
-                />
-              </svg>
+              />
             )
           })
         }
       } else if (!node.spouse && node.children.length > 0) {
-        // Single parent connections
+        // SINGLE PARENT CONNECTIONS
         const parentCenterX = node.x + nodeWidth / 2
         const parentBottomY = node.y + nodeHeight
 
-        // Vertical line down from parent
+        // Vertical line down from single parent
         const verticalEndY = node.children[0].y - 20
 
         connections.push(
-          <svg
+          <div
             key={`single-parent-${node.id}`}
-            className="absolute pointer-events-none"
+            className="absolute bg-gray-400"
             style={{
               left: parentCenterX - 1,
               top: parentBottomY,
               width: 2,
               height: verticalEndY - parentBottomY,
             }}
-          >
-            <line
-              x1={1}
-              y1={0}
-              x2={1}
-              y2={verticalEndY - parentBottomY}
-              stroke="#6b7280"
-              strokeWidth="2"
-            />
-          </svg>
+          />
         )
 
-        // Horizontal line connecting all children
+        // Horizontal line connecting all children (if more than one)
         if (node.children.length > 1) {
           const firstChild = node.children[0]
           const lastChild = node.children[node.children.length - 1]
@@ -361,25 +317,16 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
           const childrenLineEndX = lastChild.x + nodeWidth / 2
 
           connections.push(
-            <svg
+            <div
               key={`single-children-line-${node.id}`}
-              className="absolute pointer-events-none"
+              className="absolute bg-gray-400"
               style={{
                 left: childrenLineStartX,
                 top: childrenLineY - 1,
                 width: childrenLineEndX - childrenLineStartX,
                 height: 2,
               }}
-            >
-              <line
-                x1={0}
-                y1={1}
-                x2={childrenLineEndX - childrenLineStartX}
-                y2={1}
-                stroke="#6b7280"
-                strokeWidth="2"
-              />
-            </svg>
+            />
           )
         }
 
@@ -390,25 +337,16 @@ export default function FamilyTreeCanvas({ onAddMember, onEditMember }: FamilyTr
           const childLineEndY = child.y
 
           connections.push(
-            <svg
+            <div
               key={`single-to-child-${child.id}`}
-              className="absolute pointer-events-none"
+              className="absolute bg-gray-400"
               style={{
                 left: childLineX - 1,
                 top: childLineStartY,
                 width: 2,
                 height: childLineEndY - childLineStartY,
               }}
-            >
-              <line
-                x1={1}
-                y1={0}
-                x2={1}
-                y2={childLineEndY - childLineStartY}
-                stroke="#6b7280"
-                strokeWidth="2"
-              />
-            </svg>
+            />
           )
         })
       }
