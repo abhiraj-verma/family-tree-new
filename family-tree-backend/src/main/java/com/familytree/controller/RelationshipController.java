@@ -12,10 +12,9 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/relationships")
+@RequestMapping("/relationships")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class RelationshipController {
     
     private final RelationshipService relationshipService;

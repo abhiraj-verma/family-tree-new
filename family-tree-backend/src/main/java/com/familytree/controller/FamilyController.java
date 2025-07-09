@@ -12,10 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/family")
+@RequestMapping("/family")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class FamilyController {
     
     private final FamilyService familyService;

@@ -11,10 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
 @RestController
-@RequestMapping("/api/public")
+@RequestMapping("/public")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class PublicController {
     
     private final FamilyService familyService;
