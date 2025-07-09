@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useFamily } from '@/contexts/FamilyContext'
 import { User, Plus, Heart, UserPlus } from 'lucide-react'
 
@@ -17,6 +17,8 @@ interface TreeNode {
   children: TreeNode[]
   spouse?: TreeNode
   parent?: TreeNode
+  width: number
+  height: number
 }
 
 export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps) {
@@ -25,19 +27,12 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
   const [treeNodes, setTreeNodes] = useState<TreeNode[]>([])
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (family && family.members.length > 0) {
-      buildTreeStructure()
-    }
-  }, [family])
-
-  const buildTreeStructure = () => {
+  const buildTreeStructure = useCallback(() => {
     if (!family) return
 
     const activeMembers = family.members.filter(m => m.isActive)
     const nodeMap = new Map<string, TreeNode>()
 
-    // Create nodes for all members
     activeMembers.forEach(member => {
       nodeMap.set(member.id, {
         id: member.id,
@@ -47,16 +42,16 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
         level: 0,
         children: [],
         spouse: undefined,
-        parent: undefined
+        parent: undefined,
+        width: 200,
+        height: 120,
       })
     })
 
-    // Build relationships
     activeMembers.forEach(member => {
       const node = nodeMap.get(member.id)
       if (!node) return
 
-      // Add children
       if (member.relationships?.childrenIds) {
         member.relationships.childrenIds.forEach(childId => {
           const childNode = nodeMap.get(childId)
@@ -67,7 +62,6 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
         })
       }
 
-      // Add spouse
       if (member.relationships?.spouseId) {
         const spouseNode = nodeMap.get(member.relationships.spouseId)
         if (spouseNode) {
@@ -76,63 +70,76 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
       }
     })
 
-    // Find root nodes (members with no parents)
     const rootNodes = Array.from(nodeMap.values()).filter(node => !node.parent)
-
-    // Calculate positions
     const positionedNodes = calculatePositions(rootNodes)
     setTreeNodes(positionedNodes)
-  }
+  }, [family])
+
+  useEffect(() => {
+    if (family && family.members.length > 0) {
+      buildTreeStructure()
+    }
+  }, [family, buildTreeStructure])
 
   const calculatePositions = (rootNodes: TreeNode[]): TreeNode[] => {
     const nodeWidth = 200
     const nodeHeight = 120
-    const levelHeight = 180
-    const siblingSpacing = 50
+    const levelHeight = 200
+    const siblingSpacing = 40
+    const spouseSpacing = 30
 
-    const positionNode = (node: TreeNode, x: number, y: number, level: number) => {
-      node.x = x
-      node.y = y
-      node.level = level
-
-      // Position children
-      if (node.children.length > 0) {
-        const totalChildrenWidth = (node.children.length - 1) * (nodeWidth + siblingSpacing)
-        let childX = x - totalChildrenWidth / 2
-
-        node.children.forEach((child, index) => {
-          positionNode(child, childX, y + levelHeight, level + 1)
-          childX += nodeWidth + siblingSpacing
-        })
-      }
-
-      // Position spouse next to the node
-      if (node.spouse) {
-        node.spouse.x = x + nodeWidth + 30
-        node.spouse.y = y
-        node.spouse.level = level
-      }
-    }
-
-    // Position each root tree
-    let currentX = 0
-    rootNodes.forEach((rootNode, index) => {
-      positionNode(rootNode, currentX, 50, 0)
-      currentX += 400 // Space between different family trees
-    })
-
-    // Flatten all nodes
+    const positioned = new Set<string>()
     const allNodes: TreeNode[] = []
-    const collectNodes = (node: TreeNode) => {
-      allNodes.push(node)
-      if (node.spouse && !allNodes.find(n => n.id === node.spouse!.id)) {
-        allNodes.push(node.spouse)
-      }
-      node.children.forEach(collectNodes)
+
+    function positionTree(node: TreeNode, level: number, xOffset: number) {
+        if (positioned.has(node.id)) return 0;
+
+        let localX = xOffset;
+        node.level = level;
+        node.y = level * levelHeight;
+
+        const childrenWidth = node.children.reduce((acc, child) => {
+            return acc + positionTree(child, level + 1, localX + acc);
+        }, 0);
+
+        let spouseWidth = 0;
+        if (node.spouse && !positioned.has(node.spouse.id)) {
+            spouseWidth = nodeWidth + spouseSpacing;
+        }
+
+        const selfWidth = nodeWidth + (node.spouse ? spouseSpacing + nodeWidth : 0);
+        const totalWidth = Math.max(selfWidth, childrenWidth);
+        
+        const childrenStartX = localX + (totalWidth - childrenWidth) / 2;
+        let currentChildX = 0;
+        node.children.forEach(child => {
+            positionTree(child, level + 1, childrenStartX + currentChildX);
+            currentChildX += child.width;
+        });
+
+        node.x = localX + (totalWidth - selfWidth) / 2;
+        if (node.spouse && !positioned.has(node.spouse.id)) {
+            node.spouse.x = node.x + nodeWidth + spouseSpacing;
+            node.spouse.y = node.y;
+            node.spouse.level = level;
+            positioned.add(node.spouse.id);
+            allNodes.push(node.spouse);
+        }
+        
+        positioned.add(node.id);
+        allNodes.push(node);
+        node.width = totalWidth;
+        return totalWidth + siblingSpacing;
     }
 
-    rootNodes.forEach(collectNodes)
-    return allNodes
+    let currentX = 0;
+    rootNodes.forEach(root => {
+        if (!positioned.has(root.id)) {
+            currentX += positionTree(root, 0, currentX);
+        }
+    });
+
+    return allNodes;
   }
 
   const getGenderColor = (gender?: string) => {
@@ -148,62 +155,75 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
 
   const renderConnections = () => {
     const connections: JSX.Element[] = []
+    const drawnConnections = new Set<string>()
 
     treeNodes.forEach(node => {
+      // Spouse connection
+      if (node.spouse && !drawnConnections.has(`spouse-${node.id}`)) {
+        const spouse = node.spouse
+        const startX = node.x + node.width / 2
+        const endX = spouse.x + spouse.width / 2
+        const y = node.y + node.height / 2
+
+        // Line from node to heart
+        connections.push(
+          <line key={`spouse-line-1-${node.id}`} x1={startX} y1={y} x2={(startX + endX) / 2} y2={y} stroke="#6b7280" strokeWidth="2" />
+        )
+        // Heart
+        connections.push(
+          <Heart key={`spouse-heart-${node.id}`} x={(startX + endX) / 2 - 10} y={y - 10} className="w-5 h-5 text-red-500 fill-red-500" />
+        )
+        // Line from heart to spouse
+        connections.push(
+          <line key={`spouse-line-2-${node.id}`} x1={(startX + endX) / 2} y1={y} x2={endX} y2={y} stroke="#6b7280" strokeWidth="2" />
+        )
+        drawnConnections.add(`spouse-${node.id}`)
+        drawnConnections.add(`spouse-${spouse.id}`)
+      }
+
       // Parent-child connections
-      node.children.forEach(child => {
-        const startX = node.x + 100 // Center of parent node
-        const startY = node.y + 120 // Bottom of parent node
-        const endX = child.x + 100 // Center of child node
-        const endY = child.y // Top of child node
+      if (node.children.length > 0) {
+        const parentY = node.y + node.height
+        const childY = node.children[0].y
+        const midY = (parentY + childY) / 2
 
+        let parentCenterX = node.x + node.width / 2
+        if (node.spouse) {
+            parentCenterX = (node.x + node.spouse.x + node.width) / 2
+        }
+
+        // Vertical line from parent(s)
         connections.push(
-          <svg
-            key={`line-${node.id}-${child.id}`}
-            className="absolute pointer-events-none"
-            style={{
-              left: Math.min(startX, endX),
-              top: Math.min(startY, endY),
-              width: Math.abs(endX - startX) + 2,
-              height: Math.abs(endY - startY) + 2,
-            }}
-          >
-            <line
-              x1={startX - Math.min(startX, endX)}
-              y1={startY - Math.min(startY, endY)}
-              x2={endX - Math.min(startX, endX)}
-              y2={endY - Math.min(startY, endY)}
-              stroke="#6b7280"
-              strokeWidth="2"
-              strokeDasharray="5,5"
-            />
-          </svg>
+          <line key={`vline-down-${node.id}`} x1={parentCenterX} y1={node.y + node.height / 2 + (node.spouse ? 0 : 30)} x2={parentCenterX} y2={midY} stroke="#6b7280" strokeWidth="2" />
         )
-      })
 
-      // Spouse connections (heart symbol)
-      if (node.spouse) {
-        const heartX = node.x + 215
-        const heartY = node.y + 50
-
+        // Horizontal line for children
+        const firstChild = node.children[0]
+        const lastChild = node.children[node.children.length - 1]
+        const hLineStartX = firstChild.x + firstChild.width / 2
+        const hLineEndX = lastChild.x + lastChild.width / 2
         connections.push(
-          <div
-            key={`heart-${node.id}-${node.spouse.id}`}
-            className="absolute flex items-center justify-center"
-            style={{
-              left: heartX,
-              top: heartY,
-              width: 20,
-              height: 20,
-            }}
-          >
-            <Heart className="w-5 h-5 text-red-500 fill-red-500" />
-          </div>
+          <line key={`hline-children-${node.id}`} x1={hLineStartX} y1={midY} x2={hLineEndX} y2={midY} stroke="#6b7280" strokeWidth="2" />
         )
+
+        // Vertical lines to children
+        node.children.forEach(child => {
+          const childCenterX = child.x + child.width / 2
+          connections.push(
+            <line key={`vline-child-${child.id}`} x1={childCenterX} y1={midY} x2={childCenterX} y2={child.y} stroke="#6b7280" strokeWidth="2" />
+          )
+        })
       }
     })
 
-    return connections
+    return (
+        <svg className="absolute pointer-events-none" style={{
+            width: Math.max(1200, Math.max(...treeNodes.map(n => n.x)) + 400),
+            height: Math.max(600, Math.max(...treeNodes.map(n => n.y)) + 200),
+        }}>
+            {connections}
+        </svg>
+    )
   }
 
   const handleNodeClick = (nodeId: string) => {
@@ -236,8 +256,8 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
         ref={canvasRef}
         className="relative"
         style={{
-          width: Math.max(1200, Math.max(...treeNodes.map(n => n.x)) + 250),
-          height: Math.max(600, Math.max(...treeNodes.map(n => n.y)) + 150),
+          width: Math.max(1200, Math.max(...treeNodes.map(n => n.x)) + 400),
+          height: Math.max(600, Math.max(...treeNodes.map(n => n.y)) + 200),
         }}
       >
         {/* Render connections */}
@@ -261,8 +281,8 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
             style={{
               left: node.x,
               top: node.y,
-              width: 200,
-              height: 120,
+              width: node.width,
+              height: node.height,
             }}
             onClick={() => handleNodeClick(node.id)}
           >
@@ -343,7 +363,7 @@ export default function FamilyTreeCanvas({ onAddMember }: FamilyTreeCanvasProps)
           <li>• Click on a member to see options</li>
           <li>• Add children, spouse, or parents</li>
           <li>• Heart symbols show marriages</li>
-          <li>• Dotted lines show family relationships</li>
+          <li>• Lines show family relationships</li>
         </ul>
       </div>
     </div>

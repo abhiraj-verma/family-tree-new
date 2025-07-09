@@ -54,6 +54,7 @@ export const authAPI = {
     password: string
     email?: string
     mobile?: string
+    isFoundingMember?: boolean
   }) => USE_MOCK_API ? mockAuthAPI.register(data) : api.post('/auth/register', data),
 
   login: (data: { username: string; password: string }) =>

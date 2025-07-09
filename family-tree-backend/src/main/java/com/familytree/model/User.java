@@ -49,6 +49,7 @@ public class User {
     
     private Integer location = 0;
     private Boolean isActive = true;
+    private Boolean isFoundingMember = false;
     
     // Relationships
     private Relationships relationships = new Relationships();

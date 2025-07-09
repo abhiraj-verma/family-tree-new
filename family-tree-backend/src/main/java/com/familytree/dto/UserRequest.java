@@ -29,4 +29,5 @@ public class UserRequest {
     private LocalDate deathAnniversary;
     private String imageUrl;
     private Integer location;
+    private Boolean isFoundingMember;
 }

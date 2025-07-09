@@ -8,7 +8,8 @@ interface User {
   username: string
   familyName?: string
   familyKey?: string
-  token: string
+  token: string,
+  isFoundingMember?: boolean
 }
 
 interface AuthContextType {
@@ -65,9 +66,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: { username: string; password: string }) => {
     try {
       const response = await authAPI.login(credentials)
-      const { token, username, familyName, familyKey } = response.data
+      const { token, username, familyName, familyKey, isFoundingMember } = response.data
       
-      const userData = { username, familyName, familyKey }
+      const userData = { username, familyName, familyKey, isFoundingMember }
       
       // Store in cookies
       Cookies.set('auth_token', token, { expires: 30 }) // 30 days
@@ -88,9 +89,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }) => {
     try {
       const response = await authAPI.register(data)
-      const { token, username, familyName, familyKey } = response.data
+      const { token, username, familyName, familyKey, isFoundingMember } = response.data
       
-      const userData = { username, familyName, familyKey }
+      const userData = { username, familyName, familyKey, isFoundingMember }
       
       // Store in cookies
       Cookies.set('auth_token', token, { expires: 30 })
@@ -107,9 +108,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       // Mock Google sign-in for now
       const response = await authAPI.googleSignIn('mock-google-token')
-      const { token, username, familyName, familyKey } = response.data
+      const { token, username, familyName, familyKey, isFoundingMember } = response.data
       
-      const userData = { username, familyName, familyKey }
+      const userData = { username, familyName, familyKey, isFoundingMember }
       
       // Store in cookies
       Cookies.set('auth_token', token, { expires: 30 })

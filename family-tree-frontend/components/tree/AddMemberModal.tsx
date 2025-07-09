@@ -7,10 +7,11 @@ import { X, User, Phone, Mail, Calendar, Heart, Briefcase, Baby, Users } from 'l
 interface AddMemberModalProps {
   parentId?: string | null
   relationship?: string
-  onClose: () => void
+  onClose: () => void,
+  isFoundingMember?: boolean
 }
 
-export default function AddMemberModal({ parentId, relationship, onClose }: AddMemberModalProps) {
+export default function AddMemberModal({ parentId, relationship, onClose, isFoundingMember }: AddMemberModalProps) {
   const { addMember } = useFamily()
   const [formData, setFormData] = useState({
     fullName: '',
@@ -320,9 +321,9 @@ export default function AddMemberModal({ parentId, relationship, onClose }: AddM
                 >
                   <option value="child">Child</option>
                   <option value="spouse">Spouse</option>
-                  <option value="mother">Mother</option>
-                  <option value="father">Father</option>
-                  <option value="parent">Parent</option>
+                  {isFoundingMember && <option value="mother">Mother</option>}
+                  {isFoundingMember && <option value="father">Father</option>}
+                  {isFoundingMember && <option value="parent">Parent</option>}
                 </select>
               </div>
             </div>

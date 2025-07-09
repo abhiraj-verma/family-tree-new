@@ -106,6 +106,11 @@ public class FamilyService {
         user.setImageUrl(userRequest.getImageUrl());
         user.setLocation(userRequest.getLocation() != null ? userRequest.getLocation() : family.getMemberIds().size());
         user.setIsActive(true);
+        if (userRequest.getIsFoundingMember() != null) {
+            user.setIsFoundingMember(userRequest.getIsFoundingMember());
+        } else {
+            user.setIsFoundingMember(family.getMemberIds().isEmpty());
+        }
         
         user = userRepository.save(user);
         

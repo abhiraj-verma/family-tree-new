@@ -5,6 +5,7 @@ import com.familytree.service.FamilyService;
 import com.familytree.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class PublicController {
         try {
             // Validate token
             if (!jwtTokenProvider.validateToken(token)) {
-                return ResponseEntity.unauthorized().build();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
             }
             
             // Get username from token

@@ -11,7 +11,8 @@ let mockUsers: any[] = [
     familyName: 'The Doe Family',
     familyKey: 'johndoe',
     token: 'mock-jwt-token-123',
-    isGoogleSignIn: false
+    isGoogleSignIn: false,
+    isFoundingMember: true
   }
 ]
 
@@ -130,8 +131,7 @@ let mockFamilies: any[] = [
         relationships: {
           spouseId: 'member-6',
           childrenIds: ['member-1'],
-          parentIds: [],
-          childrenIds: ['member-1']
+          parentIds: []
         }
       },
       {
@@ -153,8 +153,7 @@ let mockFamilies: any[] = [
         relationships: {
           spouseId: 'member-5',
           childrenIds: ['member-1'],
-          parentIds: [],
-          childrenIds: ['member-1']
+          parentIds: []
         }
       },
       {
@@ -176,8 +175,7 @@ let mockFamilies: any[] = [
         relationships: {
           spouseId: 'member-8',
           childrenIds: ['member-2'],
-          parentIds: [],
-          childrenIds: ['member-2']
+          parentIds: []
         }
       },
       {
@@ -199,8 +197,7 @@ let mockFamilies: any[] = [
         relationships: {
           spouseId: 'member-7',
           childrenIds: ['member-2'],
-          parentIds: [],
-          childrenIds: ['member-2']
+          parentIds: []
         }
       }
     ],
@@ -391,6 +388,7 @@ export const mockAuthAPI = {
           username: user.username,
           familyName: user.familyName,
           familyKey: user.familyKey,
+          isFoundingMember: user.isFoundingMember,
           expiresIn: 2592000000
         }
       }

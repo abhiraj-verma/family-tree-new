@@ -175,6 +175,7 @@ export default function FamilyTreeBuilder() {
             setSelectedParent(null)
             setSelectedRelationship('child')
           }}
+          isFoundingMember={user?.isFoundingMember}
         />
       )}
 
