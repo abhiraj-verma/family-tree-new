@@ -52,7 +52,6 @@ public class AuthService {
         loginDetails.setEmail(request.getEmail());
         loginDetails.setMobile(request.getMobile());
         loginDetails.setIsGoogleSignIn(false);
-        loginDetails.setFamilyKey(request.getUsername()); // Use username as family key initially
         
         // Generate JWT token
         String token = jwtTokenProvider.generateToken(request.getUsername());
@@ -70,7 +69,6 @@ public class AuthService {
             refreshToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
-            loginDetails.getFamilyKey(),
             jwtTokenProvider.getExpirationTime()
         );
     }
@@ -105,7 +103,6 @@ public class AuthService {
             refreshToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
-            loginDetails.getFamilyKey(),
             jwtTokenProvider.getExpirationTime()
         );
     }
@@ -118,7 +115,6 @@ public class AuthService {
         LoginDetails loginDetails = new LoginDetails();
         loginDetails.setUsername(username);
         loginDetails.setIsGoogleSignIn(true);
-        loginDetails.setFamilyKey(username);
         
         String token = jwtTokenProvider.generateToken(username);
         String refreshToken = jwtTokenProvider.generateRefreshToken(username);
@@ -135,7 +131,6 @@ public class AuthService {
             refreshToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
-            loginDetails.getFamilyKey(),
             jwtTokenProvider.getExpirationTime()
         );
     }

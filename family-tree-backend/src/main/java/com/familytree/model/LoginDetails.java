@@ -33,7 +33,6 @@ public class LoginDetails {
     private String email;
     
     private String familyName;
-    private String familyKey;
     private Boolean isGoogleSignIn = false;
     private String token;
     private LocalDateTime tokenExpiryDate;
