@@ -22,36 +22,21 @@ public class UserController {
     
     @GetMapping("/{userId}")
     public ResponseEntity<User> getUser(@PathVariable String userId) {
-        try {
-            User user = userService.getUserById(userId);
-            return ResponseEntity.ok(user);
-        } catch (Exception e) {
-            log.error("Failed to get user: ", e);
-            return ResponseEntity.notFound().build();
-        }
+        User user = userService.getUserById(userId);
+        return ResponseEntity.ok(user);
     }
     
     @PutMapping("/{userId}")
     public ResponseEntity<User> updateUser(
             @PathVariable String userId,
             @Valid @RequestBody UserRequest userRequest) {
-        try {
-            User user = userService.updateUser(userId, userRequest);
-            return ResponseEntity.ok(user);
-        } catch (Exception e) {
-            log.error("Failed to update user: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        User user = userService.updateUser(userId, userRequest);
+        return ResponseEntity.ok(user);
     }
     
     @GetMapping("/search")
     public ResponseEntity<List<User>> searchUsers(@RequestParam String query) {
-        try {
-            List<User> users = userService.searchUsers(query);
-            return ResponseEntity.ok(users);
-        } catch (Exception e) {
-            log.error("Failed to search users: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        List<User> users = userService.searchUsers(query);
+        return ResponseEntity.ok(users);
     }
 }

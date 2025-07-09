@@ -11,6 +11,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 
@@ -27,19 +30,19 @@ public class AuthService {
     public AuthResponse register(RegisterRequest request) {
         // Check if username already exists
         if (loginDetailsRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username already exists");
         }
         
         // Check if email already exists (if provided)
         if (request.getEmail() != null && !request.getEmail().isEmpty() 
             && loginDetailsRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email already exists");
         }
         
         // Check if mobile already exists (if provided)
         if (request.getMobile() != null && !request.getMobile().isEmpty() 
             && loginDetailsRepository.existsByMobile(request.getMobile())) {
-            throw new RuntimeException("Mobile number already exists");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mobile number already exists");
         }
         
         // Create new login details
@@ -73,10 +76,14 @@ public class AuthService {
     }
     
     public AuthResponse login(AuthRequest request) {
-        // Authenticate user
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
+        try {
+            // Authenticate user
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+            );
+        } catch (BadCredentialsException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
+        }
         
         // Get user details
         LoginDetails loginDetails = loginDetailsRepository.findByUsername(request.getUsername())
@@ -142,5 +149,11 @@ public class AuthService {
         loginDetailsRepository.save(loginDetails);
         
         log.info("User logged out successfully: {}", username);
+    }
+
+    public String extractUsernameFromToken(String tokenHeader) {
+        // Remove 'Bearer ' prefix if present
+        String token = tokenHeader.startsWith("Bearer ") ? tokenHeader.substring(7) : tokenHeader;
+        return jwtTokenProvider.getUsernameFromToken(token);
     }
 }

@@ -23,34 +23,19 @@ public class RelationshipController {
     @PostMapping
     public ResponseEntity<Relationship> createRelationship(
             @Valid @RequestBody RelationshipRequest request) {
-        try {
-            Relationship relationship = relationshipService.createRelationship(request);
-            return ResponseEntity.ok(relationship);
-        } catch (Exception e) {
-            log.error("Failed to create relationship: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        Relationship relationship = relationshipService.createRelationship(request);
+        return ResponseEntity.ok(relationship);
     }
     
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Relationship>> getUserRelationships(@PathVariable String userId) {
-        try {
-            List<Relationship> relationships = relationshipService.getUserRelationships(userId);
-            return ResponseEntity.ok(relationships);
-        } catch (Exception e) {
-            log.error("Failed to get user relationships: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        List<Relationship> relationships = relationshipService.getUserRelationships(userId);
+        return ResponseEntity.ok(relationships);
     }
     
     @DeleteMapping("/{relationshipId}")
     public ResponseEntity<Void> deleteRelationship(@PathVariable String relationshipId) {
-        try {
-            relationshipService.deleteRelationship(relationshipId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Failed to delete relationship: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        relationshipService.deleteRelationship(relationshipId);
+        return ResponseEntity.ok().build();
     }
 }

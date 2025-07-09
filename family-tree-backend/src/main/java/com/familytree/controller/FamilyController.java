@@ -24,25 +24,15 @@ public class FamilyController {
     public ResponseEntity<FamilyResponse> createFamily(
             @RequestParam String familyName,
             Authentication authentication) {
-        try {
-            String username = authentication.getName();
-            FamilyResponse response = familyService.createFamily(username, familyName);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Failed to create family: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        String username = authentication.getName();
+        FamilyResponse response = familyService.createFamily(username, familyName);
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/{familyKey}")
     public ResponseEntity<FamilyResponse> getFamily(@PathVariable String familyKey) {
-        try {
-            FamilyResponse response = familyService.getFamilyByKey(familyKey);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Failed to get family: ", e);
-            return ResponseEntity.notFound().build();
-        }
+        FamilyResponse response = familyService.getFamilyByKey(familyKey);
+        return ResponseEntity.ok(response);
     }
     
     @PostMapping("/{familyKey}/members")
@@ -51,38 +41,23 @@ public class FamilyController {
             @Valid @RequestBody UserRequest userRequest,
             @RequestParam(required = false) String parentId,
             @RequestParam(required = false) String relationshipType) {
-        try {
-            User user = familyService.addMember(familyKey, userRequest, parentId, relationshipType);
-            return ResponseEntity.ok(user);
-        } catch (Exception e) {
-            log.error("Failed to add member: ", e);
-            return ResponseEntity.badRequest().body(null);
-        }
+        User user = familyService.addMember(familyKey, userRequest, parentId, relationshipType);
+        return ResponseEntity.ok(user);
     }
     
     @DeleteMapping("/{familyKey}/members/{userId}")
     public ResponseEntity<Void> removeMember(
             @PathVariable String familyKey,
             @PathVariable String userId) {
-        try {
-            familyService.removeMember(familyKey, userId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Failed to remove member: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        familyService.removeMember(familyKey, userId);
+        return ResponseEntity.ok().build();
     }
     
     @PutMapping("/{familyKey}/name")
     public ResponseEntity<Void> updateFamilyName(
             @PathVariable String familyKey,
             @RequestParam String newName) {
-        try {
-            familyService.updateFamilyName(familyKey, newName);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Failed to update family name: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        familyService.updateFamilyName(familyKey, newName);
+        return ResponseEntity.ok().build();
     }
 }

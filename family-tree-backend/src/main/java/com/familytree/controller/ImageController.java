@@ -20,23 +20,13 @@ public class ImageController {
     public ResponseEntity<String> uploadImage(
             @PathVariable String userId,
             @RequestParam("file") MultipartFile file) {
-        try {
-            String imageUrl = imageService.uploadImage(file, userId);
-            return ResponseEntity.ok(imageUrl);
-        } catch (Exception e) {
-            log.error("Failed to upload image: ", e);
-            return ResponseEntity.badRequest().body("Failed to upload image: " + e.getMessage());
-        }
+        String imageUrl = imageService.uploadImage(file, userId);
+        return ResponseEntity.ok(imageUrl);
     }
     
     @DeleteMapping("/delete")
     public ResponseEntity<Void> deleteImage(@RequestParam String imageUrl) {
-        try {
-            imageService.deleteImage(imageUrl);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Failed to delete image: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        imageService.deleteImage(imageUrl);
+        return ResponseEntity.ok().build();
     }
 }

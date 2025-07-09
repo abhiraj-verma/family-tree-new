@@ -20,46 +20,28 @@ public class AuthController {
     
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        try {
-            AuthResponse response = authService.register(request);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Registration failed: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        AuthResponse response = authService.register(request);
+        return ResponseEntity.ok(response);
     }
     
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
-        try {
-            AuthResponse response = authService.login(request);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Login failed: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
     
     @PostMapping("/google-signin")
     public ResponseEntity<AuthResponse> googleSignIn(@RequestBody String googleToken) {
-        try {
-            AuthResponse response = authService.googleSignIn(googleToken);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("Google sign-in failed: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        // TODO: Implement real Google OAuth verification
+        AuthResponse response = authService.googleSignIn(googleToken);
+        return ResponseEntity.ok(response);
     }
     
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@RequestHeader("Authorization") String token) {
-        try {
-            // Extract username from token and logout
-            // Implementation depends on your JWT token structure
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Logout failed: ", e);
-            return ResponseEntity.badRequest().build();
-        }
+        // Extract username from JWT token
+        String username = authService.extractUsernameFromToken(token);
+        authService.logout(username);
+        return ResponseEntity.ok().build();
     }
 }
