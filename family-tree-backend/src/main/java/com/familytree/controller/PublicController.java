@@ -23,10 +23,6 @@ public class PublicController {
     public ResponseEntity<FamilyResponse> getPublicFamily(
             @PathVariable String token,
             @RequestParam String familyName) {
-        // Validate token
-        if (!jwtTokenProvider.validateToken(token)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token");
-        }
         // Get username from token
         String username = jwtTokenProvider.getUsernameFromToken(token);
         // Get family by key (username)

@@ -1,5 +1,6 @@
 package com.familytree.security;
 
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Date;
 
 @Component
 @RequiredArgsConstructor
@@ -26,23 +28,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
     
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
-                                  FilterChain filterChain) throws ServletException, IOException {
-        
-        String token = getTokenFromRequest(request);
-        
-        if (StringUtils.hasText(token) && jwtTokenProvider.validateToken(token)) {
-            String username = jwtTokenProvider.getUsernameFromToken(token);
-            
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+
+        try {
+            String token = getTokenFromRequest(request);
+
+            if (!StringUtils.hasText(token)) {
+                throw new RuntimeException("Missing Authorization token");
+            }
+
+            Claims claims = jwtTokenProvider.validateToken(token);
+            if (!claims.getExpiration().after(new Date())) {
+                throw new RuntimeException("Jwt token expired");
+            }
+
+            String username = claims.getSubject();
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-            
-            UsernamePasswordAuthenticationToken authentication = 
-                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+            if (userDetails == null) {
+                throw new RuntimeException("User not found for token");
+            }
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            
+
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        } catch (RuntimeException ex) {
+            log.warn("JWT Authentication error: {}", ex.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("{\"error\": \"" + ex.getMessage() + "\"}");
+            response.setContentType("application/json");
+            return;
         }
-        
+
         filterChain.doFilter(request, response);
     }
     

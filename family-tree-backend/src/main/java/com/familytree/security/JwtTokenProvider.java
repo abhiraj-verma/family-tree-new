@@ -60,16 +60,16 @@ public class JwtTokenProvider {
         return claims.getSubject();
     }
 
-    public boolean validateToken(String token) {
+    public Claims validateToken(String token) throws RuntimeException {
         try {
-            Jwts.parser()
+            return Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()
-                    .parseSignedClaims(token);
-            return true;
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (JwtException | IllegalArgumentException e) {
-            System.err.println("Invalid JWT token: " + e.getMessage());
-            return false;
+            log.warn("Invalid JWT token | error: {}", e.getMessage(), e);
+            throw new RuntimeException("Invalid jwt token");
         }
     }
     
