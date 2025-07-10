@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,9 +20,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Date;
 
-@Component
 @RequiredArgsConstructor
 @Slf4j
+@Component
+@Order(1)
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     
     private final JwtTokenProvider jwtTokenProvider;
@@ -33,29 +35,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             String token = getTokenFromRequest(request);
+            if (StringUtils.hasText(token)) {
+                Claims claims = jwtTokenProvider.validateToken(token);
+                if (!claims.getExpiration().after(new Date())) {
+                    throw new RuntimeException("Jwt token expired");
+                }
+                String username = claims.getSubject();
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (!StringUtils.hasText(token)) {
-                throw new RuntimeException("Missing Authorization token");
+                if (userDetails == null) {
+                    throw new RuntimeException("User not found for token");
+                }
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
-
-            Claims claims = jwtTokenProvider.validateToken(token);
-            if (!claims.getExpiration().after(new Date())) {
-                throw new RuntimeException("Jwt token expired");
-            }
-
-            String username = claims.getSubject();
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (userDetails == null) {
-                throw new RuntimeException("User not found for token");
-            }
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
         } catch (RuntimeException ex) {
             log.warn("JWT Authentication error: {}", ex.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
