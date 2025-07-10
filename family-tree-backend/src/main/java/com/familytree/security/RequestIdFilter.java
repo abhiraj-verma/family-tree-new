@@ -33,13 +33,16 @@ public class RequestIdFilter extends OncePerRequestFilter {
         }
 
         MDC.put(MDC_KEY, requestId);
-        response.setHeader(REQUEST_ID_HEADER, requestId); // Optional: echo back
-
-        log.info("Request [{}] => {} {}", requestId, request.getMethod(), request.getRequestURI());
+        long startTime = System.currentTimeMillis();
+        log.info("Request received [{}] => {} {}", requestId, request.getMethod(), request.getRequestURI());
+        response.setHeader(REQUEST_ID_HEADER, requestId);
 
         try {
             filterChain.doFilter(request, response);
         } finally {
+            log.info("Request completed [{}] => {} {} | time: {} | statusCode: {}",
+                    requestId, request.getMethod(), request.getRequestURI(),
+                    System.currentTimeMillis() - startTime, response.getStatus());
             MDC.remove(MDC_KEY);
         }
     }
