@@ -1,8 +1,9 @@
 package com.familytree.controller;
 
+import com.familytree.config.UserRequestAuditor;
 import com.familytree.dto.FamilyResponse;
 import com.familytree.service.FamilyService;
-import com.familytree.security.JwtTokenProvider;
+import com.familytree.service.JwtTokenProviderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -17,17 +18,14 @@ import org.springframework.http.HttpStatus;
 public class PublicController {
     
     private final FamilyService familyService;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtTokenProviderService jwtTokenProviderService;
     
-    @GetMapping("/family/{token}")
+    @GetMapping("/getFamily/")
     public ResponseEntity<FamilyResponse> getPublicFamily(
-            @PathVariable String token,
+            @RequestParam String token,
             @RequestParam String familyName) {
-        // Get username from token
-        String username = jwtTokenProvider.getUsernameFromToken(token);
-        // Get family by key (username)
+        String username = UserRequestAuditor.getCurrentUser().getUsername();
         FamilyResponse family = familyService.getFamilyByKey(username);
-        // Verify family name matches
         if (!family.getName().equals(familyName)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Family not found");
         }

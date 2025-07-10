@@ -1,4 +1,4 @@
-package com.familytree.security;
+package com.familytree.service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -12,7 +12,7 @@ import java.util.Date;
 
 @Component
 @Slf4j
-public class JwtTokenProvider {
+public class JwtTokenProviderService {
     
     @Value("${jwt.secret}")
     private String jwtSecret;

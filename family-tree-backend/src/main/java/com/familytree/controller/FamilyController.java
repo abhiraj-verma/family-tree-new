@@ -1,12 +1,12 @@
 package com.familytree.controller;
 
+import com.familytree.config.UserRequestAuditor;
 import com.familytree.dto.*;
 import com.familytree.model.User;
 import com.familytree.service.FamilyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -21,9 +21,8 @@ public class FamilyController {
     
     @PostMapping("/create")
     public ResponseEntity<FamilyResponse> createFamily(
-            @RequestParam String familyName,
-            Authentication authentication) {
-        String username = authentication.getName();
+            @RequestParam String familyName) {
+        String username = UserRequestAuditor.getCurrentUser().getUsername();
         FamilyResponse response = familyService.createFamily(username, familyName);
         return ResponseEntity.ok(response);
     }
