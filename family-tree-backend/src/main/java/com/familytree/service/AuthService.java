@@ -6,6 +6,7 @@ import com.familytree.repository.LoginDetailsRepository;
 import com.familytree.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -21,7 +22,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
-    
+
+    @Value("${public.url.redirection.dns}")
+    private String redirectionDns;
+
     private final LoginDetailsRepository loginDetailsRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
@@ -65,11 +69,11 @@ public class AuthService {
         log.info("User registered successfully: {}", request.getUsername());
         
         return new AuthResponse(
-            token,
+            redirectionDns + token,
             refreshToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
-            jwtTokenProvider.getExpirationTime()
+            loginDetails.getTokenExpiryDate()
         );
     }
     
@@ -88,33 +92,26 @@ public class AuthService {
             .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Generate new tokens
-        String token = jwtTokenProvider.generateToken(request.getUsername());
         String refreshToken = jwtTokenProvider.generateRefreshToken(request.getUsername());
-        
-        // Update token in database
-        loginDetails.setToken(token);
-        loginDetails.setTokenExpiryDate(LocalDateTime.now().plusDays(30));
-        loginDetailsRepository.save(loginDetails);
         
         log.info("User logged in successfully: {}", request.getUsername());
         
         return new AuthResponse(
-            token,
+            redirectionDns + loginDetails.getToken(),
             refreshToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
-            jwtTokenProvider.getExpirationTime()
+            loginDetails.getTokenExpiryDate()
         );
     }
     
-    public AuthResponse googleSignIn(String googleToken) {
-        // TODO: Implement Google OAuth verification
-        // For now, create a mock implementation
-        String username = "google_" + System.currentTimeMillis();
+    public AuthResponse googleSignIn(GoogleSignUpRequest request) {
+        String username = request.getGoogleId();
         
         LoginDetails loginDetails = new LoginDetails();
         loginDetails.setUsername(username);
         loginDetails.setIsGoogleSignIn(true);
+        loginDetails.setEmail(request.getEmail());
         
         String token = jwtTokenProvider.generateToken(username);
         String refreshToken = jwtTokenProvider.generateRefreshToken(username);
@@ -127,21 +124,21 @@ public class AuthService {
         log.info("Google sign-in successful: {}", username);
         
         return new AuthResponse(
-            token,
+            redirectionDns + token,
             refreshToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
-            jwtTokenProvider.getExpirationTime()
+            loginDetails.getTokenExpiryDate()
         );
     }
     
     public void logout(String username) {
-        LoginDetails loginDetails = loginDetailsRepository.findByUsername(username)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        loginDetails.setToken(null);
-        loginDetails.setTokenExpiryDate(null);
-        loginDetailsRepository.save(loginDetails);
+//        LoginDetails loginDetails = loginDetailsRepository.findByUsername(username)
+//            .orElseThrow(() -> new RuntimeException("User not found"));
+//
+//        loginDetails.setToken(null);
+//        loginDetails.setTokenExpiryDate(null);
+//        loginDetailsRepository.save(loginDetails);
         
         log.info("User logged out successfully: {}", username);
     }
