@@ -17,18 +17,18 @@ public class JwtTokenProvider {
     @Value("${jwt.secret}")
     private String jwtSecret;
     
-    @Value("${jwt.expiration}")
-    private long jwtExpirationMs;
+    @Value("${jwt.public.token.expiration}")
+    private long jwtPublicTokenExpirationMs;
     
-    @Value("${jwt.refresh-expiration}")
-    private long jwtRefreshExpirationMs;
+    @Value("${jwt.session.token.expiration}")
+    private long jwtSessionTokenExpirationMs;
     
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
 
-    public String generateToken(String username) {
-        Date expiryDate = new Date(System.currentTimeMillis() + jwtExpirationMs);
+    public String generatePublicToken(String username) {
+        Date expiryDate = new Date(System.currentTimeMillis() + jwtPublicTokenExpirationMs);
 
         return Jwts.builder()
                 .subject(username)
@@ -38,8 +38,8 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public String generateRefreshToken(String username) {
-        Date expiryDate = new Date(System.currentTimeMillis() + jwtRefreshExpirationMs);
+    public String generateSessionToken(String username) {
+        Date expiryDate = new Date(System.currentTimeMillis() + jwtSessionTokenExpirationMs);
 
         return Jwts.builder()
                 .subject(username)
@@ -71,9 +71,5 @@ public class JwtTokenProvider {
             log.warn("Invalid JWT token | error: {}", e.getMessage(), e);
             throw new RuntimeException("Invalid jwt token");
         }
-    }
-    
-    public long getExpirationTime() {
-        return jwtExpirationMs;
     }
 }

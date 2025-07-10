@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 public class AuthResponse {
-    private String token;
-    private String refreshToken;
+    private String publicUrl;
+    private String sessionToken;
     private String username;
     private String familyName;
     private LocalDateTime expireOn;

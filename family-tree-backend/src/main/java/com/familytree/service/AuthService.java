@@ -30,6 +30,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManager authenticationManager;
+    private static final String GOOGLE_SIGN_UP_PREFIX = "g-";
     
     public AuthResponse register(RegisterRequest request) {
         // Check if username already exists
@@ -57,11 +58,11 @@ public class AuthService {
         loginDetails.setMobile(request.getMobile());
         loginDetails.setIsGoogleSignIn(false);
         
-        // Generate JWT token
-        String token = jwtTokenProvider.generateToken(request.getUsername());
-        String refreshToken = jwtTokenProvider.generateRefreshToken(request.getUsername());
+        // Generate JWT publicToken
+        String publicToken = jwtTokenProvider.generatePublicToken(request.getUsername());
+        String sessionToken = jwtTokenProvider.generateSessionToken(request.getUsername());
         
-        loginDetails.setToken(token);
+        loginDetails.setToken(publicToken);
         loginDetails.setTokenExpiryDate(LocalDateTime.now().plusDays(30));
         
         loginDetailsRepository.save(loginDetails);
@@ -69,8 +70,8 @@ public class AuthService {
         log.info("User registered successfully: {}", request.getUsername());
         
         return new AuthResponse(
-            redirectionDns + token,
-            refreshToken,
+            redirectionDns + publicToken,
+            sessionToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
             loginDetails.getTokenExpiryDate()
@@ -92,13 +93,13 @@ public class AuthService {
             .orElseThrow(() -> new RuntimeException("User not found"));
         
         // Generate new tokens
-        String refreshToken = jwtTokenProvider.generateRefreshToken(request.getUsername());
+        String sessionToken = jwtTokenProvider.generateSessionToken(request.getUsername());
         
         log.info("User logged in successfully: {}", request.getUsername());
         
         return new AuthResponse(
             redirectionDns + loginDetails.getToken(),
-            refreshToken,
+            sessionToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
             loginDetails.getTokenExpiryDate()
@@ -106,17 +107,16 @@ public class AuthService {
     }
     
     public AuthResponse googleSignIn(GoogleSignUpRequest request) {
-        String username = request.getGoogleId();
-        
+        String username = GOOGLE_SIGN_UP_PREFIX + request.getGoogleId();
         LoginDetails loginDetails = new LoginDetails();
         loginDetails.setUsername(username);
         loginDetails.setIsGoogleSignIn(true);
         loginDetails.setEmail(request.getEmail());
         
-        String token = jwtTokenProvider.generateToken(username);
-        String refreshToken = jwtTokenProvider.generateRefreshToken(username);
+        String publicToken = jwtTokenProvider.generatePublicToken(username);
+        String sessionToken = jwtTokenProvider.generateSessionToken(username);
         
-        loginDetails.setToken(token);
+        loginDetails.setToken(publicToken);
         loginDetails.setTokenExpiryDate(LocalDateTime.now().plusDays(30));
         
         loginDetailsRepository.save(loginDetails);
@@ -124,8 +124,8 @@ public class AuthService {
         log.info("Google sign-in successful: {}", username);
         
         return new AuthResponse(
-            redirectionDns + token,
-            refreshToken,
+            redirectionDns + publicToken,
+            sessionToken,
             loginDetails.getUsername(),
             loginDetails.getFamilyName(),
             loginDetails.getTokenExpiryDate()
@@ -145,7 +145,7 @@ public class AuthService {
 
     public String extractUsernameFromToken(String tokenHeader) {
         // Remove 'Bearer ' prefix if present
-        String token = tokenHeader.startsWith("Bearer ") ? tokenHeader.substring(7) : tokenHeader;
-        return jwtTokenProvider.getUsernameFromToken(token);
+        String publicToken = tokenHeader.startsWith("Bearer ") ? tokenHeader.substring(7) : tokenHeader;
+        return jwtTokenProvider.getUsernameFromToken(publicToken);
     }
 }

@@ -31,7 +31,6 @@ public class AuthController {
     
     @PostMapping("/google-signin")
     public ResponseEntity<AuthResponse> googleSignIn(@RequestBody GoogleSignUpRequest request) {
-        // TODO: Implement real Google OAuth verification
         AuthResponse response = authService.googleSignIn(request);
         return ResponseEntity.ok(response);
     }

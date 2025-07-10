@@ -38,12 +38,12 @@ Content-Type: application/json
 **Happy Flow Response (200 OK):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "publicUrl": "https://dns.com?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "username": "johndoe",
   "familyName": null,
   "familyKey": "johndoe",
-  "expiresIn": 2592000000
+  "expiresOn": "2025-08-09T23:57:23.92"
 }
 ```
 
@@ -100,12 +100,12 @@ Content-Type: application/json
 **Happy Flow Response (200 OK):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "publicUrl": "https://dns.com?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "username": "johndoe",
   "familyName": "The Doe Family",
   "familyKey": "johndoe",
-  "expiresIn": 2592000000
+  "expiresOn": "2025-08-09T23:57:23.92"
 }
 ```
 
@@ -158,12 +158,12 @@ Content-Type: application/json
 **Happy Flow Response (200 OK):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "publicUrl": "http://dns.com?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "sessionToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "username": "google_1642234567890",
   "familyName": null,
   "familyKey": "google_1642234567890",
-  "expiresIn": 2592000000
+  "expiresOn": "2025-08-09T23:57:23.92"
 }
 ```
 
@@ -1268,7 +1268,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```json
 {
   "token": "string (JWT)",
-  "refreshToken": "string (JWT)",
+  "sessionToken": "string (JWT)",
   "username": "string",
   "familyName": "string (optional)",
   "familyKey": "string",
