@@ -1,7 +1,10 @@
 package com.familytree.service;
 
+import com.familytree.config.UserRequestAuditor;
 import com.familytree.dto.UserRequest;
+import com.familytree.model.Family;
 import com.familytree.model.User;
+import com.familytree.repository.FamilyRepository;
 import com.familytree.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +26,12 @@ public class UserService {
     
     public User updateUser(String userId, UserRequest userRequest) {
         User user = getUserById(userId);
-        
+
+        if (!UserRequestAuditor.getCurrentUser().getUsername().equals(user.getFamilyKey())) {
+            log.warn("You are not authorized to update details of this member | userId :{}", userId);
+            throw new RuntimeException("Unable to update as this user does not belong to your family");
+        }
+
         // Update user fields
         user.setFullName(userRequest.getFullName());
         user.setNickName(userRequest.getNickName());

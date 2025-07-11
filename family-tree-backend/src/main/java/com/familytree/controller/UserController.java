@@ -19,15 +19,15 @@ public class UserController {
     
     private final UserService userService;
     
-    @GetMapping("/{userId}")
-    public ResponseEntity<User> getUser(@PathVariable String userId) {
+    @GetMapping("/fetch")
+    public ResponseEntity<User> getUser(@RequestParam String userId) {
         User user = userService.getUserById(userId);
         return ResponseEntity.ok(user);
     }
     
-    @PutMapping("/{userId}")
+    @PutMapping("/update")
     public ResponseEntity<User> updateUser(
-            @PathVariable String userId,
+            @RequestParam String userId,
             @Valid @RequestBody UserRequest userRequest) {
         User user = userService.updateUser(userId, userRequest);
         return ResponseEntity.ok(user);

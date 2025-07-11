@@ -15,15 +15,15 @@ public class ImageController {
     
     private final ImageService imageService;
     
-    @PostMapping("/upload/{userId}")
+    @PostMapping("/upload")
     public ResponseEntity<String> uploadImage(
-            @PathVariable String userId,
+            @RequestParam String userId,
             @RequestParam("file") MultipartFile file) {
         String imageUrl = imageService.uploadImage(file, userId);
         return ResponseEntity.ok(imageUrl);
     }
     
-    @DeleteMapping("/delete")
+    @PutMapping("/delete")
     public ResponseEntity<Void> deleteImage(@RequestParam String imageUrl) {
         imageService.deleteImage(imageUrl);
         return ResponseEntity.ok().build();

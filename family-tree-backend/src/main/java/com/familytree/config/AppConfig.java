@@ -29,7 +29,7 @@ public class AppConfig implements WebMvcConfigurer {
         list.add("/images/**");
         list.add("/relationships/**");
         list.add("/users/**");
-        list.add("/public/family/**");
+        list.add("/public/login/**");
         return list.toArray(new String[list.size()]);
     }
 }

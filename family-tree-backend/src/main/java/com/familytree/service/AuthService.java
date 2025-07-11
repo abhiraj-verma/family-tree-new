@@ -1,5 +1,6 @@
 package com.familytree.service;
 
+import com.familytree.config.UserRequestAuditor;
 import com.familytree.dto.*;
 import com.familytree.model.LoginDetails;
 import com.familytree.repository.LoginDetailsRepository;
@@ -133,5 +134,28 @@ public class AuthService {
         // Remove 'Bearer ' prefix if present
         String publicToken = tokenHeader.startsWith("Bearer ") ? tokenHeader.substring(7) : tokenHeader;
         return jwtTokenProviderService.getUsernameFromToken(publicToken);
+    }
+
+    public AuthResponse publicTokenLogIn(String familyName) {
+        String username = UserRequestAuditor.getCurrentUser().getUsername();
+        LoginDetails loginDetails = loginDetailsRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!loginDetails.getFamilyName().equals(familyName)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Family not found");
+        }
+
+        // Generate new tokens
+        String sessionToken = jwtTokenProviderService.generateSessionToken(username);
+
+        log.info("User logged in successfully through public url: {}", username);
+
+        return new AuthResponse(
+                redirectionDns + loginDetails.getToken(),
+                sessionToken,
+                username,
+                loginDetails.getFamilyName(),
+                loginDetails.getTokenExpiryDate()
+        );
     }
 }

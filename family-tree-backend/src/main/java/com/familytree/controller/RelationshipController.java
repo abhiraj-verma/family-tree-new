@@ -19,21 +19,21 @@ public class RelationshipController {
     
     private final RelationshipService relationshipService;
     
-    @PostMapping
+    @PostMapping("create")
     public ResponseEntity<Relationship> createRelationship(
             @Valid @RequestBody RelationshipRequest request) {
         Relationship relationship = relationshipService.createRelationship(request);
         return ResponseEntity.ok(relationship);
     }
     
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Relationship>> getUserRelationships(@PathVariable String userId) {
+    @GetMapping("/UserRelations")
+    public ResponseEntity<List<Relationship>> getUserRelationships(@RequestParam String userId) {
         List<Relationship> relationships = relationshipService.getUserRelationships(userId);
         return ResponseEntity.ok(relationships);
     }
     
-    @DeleteMapping("/{relationshipId}")
-    public ResponseEntity<Void> deleteRelationship(@PathVariable String relationshipId) {
+    @PutMapping("/deleteRelation")
+    public ResponseEntity<Void> deleteRelationship(@RequestParam String relationshipId) {
         relationshipService.deleteRelationship(relationshipId);
         return ResponseEntity.ok().build();
     }
