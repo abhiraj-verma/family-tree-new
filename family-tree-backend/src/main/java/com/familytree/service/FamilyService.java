@@ -86,6 +86,12 @@ public class FamilyService {
     public User addMember(String familyKey, UserRequest userRequest, String parentId, String relationshipType) {
         Family family = familyRepository.findByFamilyKey(familyKey)
             .orElseThrow(() -> new RuntimeException("Family not found"));
+
+        if (!family.getMemberIds().isEmpty() &&
+                (parentId == null || relationshipType == null)) {
+            log.warn("Reference member must not be null for subsequent member addition | familyKey: {}", familyKey);
+            throw new RuntimeException("Reference member must not be null for new member addition");
+        }
         
         // Create new user
         User user = new User();
@@ -107,8 +113,12 @@ public class FamilyService {
         user.setLocation(userRequest.getLocation() != null ? userRequest.getLocation() : family.getMemberIds().size());
         user.setIsActive(true);
         user.setIsBloodRelative(true);
+        user.setFamilyKey(familyKey);
         
         user = userRepository.save(user);
+
+        // Adding member
+        family.getMemberIds().add(user.getId());
 
         // Handle relationships
         if (parentId != null && relationshipType != null) {
@@ -137,6 +147,7 @@ public class FamilyService {
             newUser.setIsActive(false);
             newUser.setInactiveReason("Adding member to an inactive member is not allowed");
             userRepository.save(newUser);
+            family.getMemberIds().remove(newUser.getId());
             throw new RuntimeException("Adding member to an inactive member is not allowed");
         }
 
@@ -146,6 +157,7 @@ public class FamilyService {
             newUser.setIsActive(false);
             newUser.setInactiveReason("Ancestor of member not related by blood");
             userRepository.save(newUser);
+            family.getMemberIds().remove(newUser.getId());
             throw new RuntimeException("You can not add ancestors of members who are not related by blood");
         }
 
@@ -270,7 +282,6 @@ public class FamilyService {
         
         // Save relationship
         family.getRelationships().add(relationship);
-        family.getMemberIds().add(newUser.getId());
 
         // Update users
         userRepository.save(existingUser);
@@ -292,6 +303,9 @@ public class FamilyService {
         // Remove relationships
         family.getRelationships().removeIf(rel -> 
             rel.getFromId().equals(userId) || rel.getToId().equals(userId));
+
+        // Remove member from family
+        family.getMemberIds().remove(userId);
         
         // Update other users' relationships
         List<User> allMembers = userRepository.findAllById(family.getMemberIds());

@@ -51,6 +51,7 @@ public class User {
     private Boolean isActive = true;
     private Boolean isBloodRelative = true;
     private String inactiveReason;
+    private String familyKey;
     
     // Relationships
     private Relationships relationships = new Relationships();

@@ -35,11 +35,11 @@ public class JwtTokenAuthenticationInterceptor implements HandlerInterceptor {
             String token = StringUtils.hasText(request.getHeader("token")) ?
                     request.getHeader("token") : request.getParameter("token") ;
             if (!StringUtils.hasText(token)) {
-                throw new RuntimeException("Jwt token not found");
+                throw new RuntimeException("Authorization token not found");
             }
             Claims claims = jwtTokenProviderService.validateToken(token);
             if (!claims.getExpiration().after(new Date())) {
-                    throw new RuntimeException("Jwt token expired");
+                    throw new RuntimeException("Authorization token expired");
                 }
             String username = claims.getSubject();
             loginDetailsRepository.findByUsername(username)

@@ -43,7 +43,7 @@ public class FamilyController {
         return ResponseEntity.ok(user);
     }
     
-    @DeleteMapping("/removeMembers")
+    @PutMapping("/removeMembers")
     public ResponseEntity<Void> removeMember(
             @RequestParam String familyKey,
             @RequestParam String userId) {

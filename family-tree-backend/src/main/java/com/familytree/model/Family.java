@@ -11,8 +11,10 @@ import org.springframework.data.mongodb.core.index.Indexed;
 
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -29,7 +31,7 @@ public class Family {
     private String familyKey; // This will be the username from login_details
     
     private FamilyNode rootNode;
-    private List<String> memberIds = new ArrayList<>();
+    private Set<String> memberIds = new HashSet<>();
     private List<Relationship> relationships = new ArrayList<>();
     
     @CreatedDate
