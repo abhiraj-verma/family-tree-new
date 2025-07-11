@@ -27,15 +27,15 @@ public class FamilyController {
         return ResponseEntity.ok(response);
     }
     
-    @GetMapping("/{familyKey}")
-    public ResponseEntity<FamilyResponse> getFamily(@PathVariable String familyKey) {
+    @GetMapping("/fetch")
+    public ResponseEntity<FamilyResponse> getFamily(@RequestParam String familyKey) {
         FamilyResponse response = familyService.getFamilyByKey(familyKey);
         return ResponseEntity.ok(response);
     }
     
-    @PostMapping("/{familyKey}/members")
+    @PostMapping("/addMembers")
     public ResponseEntity<User> addMember(
-            @PathVariable String familyKey,
+            @RequestParam String familyKey,
             @Valid @RequestBody UserRequest userRequest,
             @RequestParam(required = false) String parentId,
             @RequestParam(required = false) String relationshipType) {
@@ -43,17 +43,17 @@ public class FamilyController {
         return ResponseEntity.ok(user);
     }
     
-    @DeleteMapping("/{familyKey}/members/{userId}")
+    @DeleteMapping("/removeMembers")
     public ResponseEntity<Void> removeMember(
-            @PathVariable String familyKey,
-            @PathVariable String userId) {
+            @RequestParam String familyKey,
+            @RequestParam String userId) {
         familyService.removeMember(familyKey, userId);
         return ResponseEntity.ok().build();
     }
     
-    @PutMapping("/{familyKey}/name")
+    @PutMapping("/updateName")
     public ResponseEntity<Void> updateFamilyName(
-            @PathVariable String familyKey,
+            @RequestParam String familyKey,
             @RequestParam String newName) {
         familyService.updateFamilyName(familyKey, newName);
         return ResponseEntity.ok().build();

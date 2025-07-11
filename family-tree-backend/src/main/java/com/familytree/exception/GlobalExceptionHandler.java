@@ -17,6 +17,8 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+    private static final String FAILURE = "FAILURE";
     
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
@@ -24,10 +26,8 @@ public class GlobalExceptionHandler {
         
         ErrorResponse error = ErrorResponse.builder()
             .timestamp(LocalDateTime.now())
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error("Bad Request")
+            .status(FAILURE)
             .message(ex.getMessage())
-            .path(request.getRequestURI())
             .build();
             
         return ResponseEntity.badRequest().body(error);
@@ -44,11 +44,9 @@ public class GlobalExceptionHandler {
         
         ErrorResponse error = ErrorResponse.builder()
             .timestamp(LocalDateTime.now())
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error("Validation Failed")
+            .status(FAILURE)
             .message("Invalid input data")
             .validationErrors(errors)
-            .path(request.getRequestURI())
             .build();
             
         return ResponseEntity.badRequest().body(error);
@@ -60,10 +58,8 @@ public class GlobalExceptionHandler {
         
         ErrorResponse error = ErrorResponse.builder()
             .timestamp(LocalDateTime.now())
-            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .error("Internal Server Error")
+            .status(FAILURE)
             .message("An unexpected error occurred")
-            .path(request.getRequestURI())
             .build();
             
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
@@ -73,8 +69,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException ex, HttpServletRequest request) {
         ErrorResponse error = ErrorResponse.builder()
             .timestamp(LocalDateTime.now())
-            .status(ex.getStatusCode().value())
-            .error(ex.getReason())
+            .status(FAILURE)
             .message(ex.getReason())
             .build();
         return ResponseEntity.status(ex.getStatusCode()).body(error);

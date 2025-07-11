@@ -49,6 +49,8 @@ public class User {
     
     private Integer location = 0;
     private Boolean isActive = true;
+    private Boolean isBloodRelative = true;
+    private String inactiveReason;
     
     // Relationships
     private Relationships relationships = new Relationships();

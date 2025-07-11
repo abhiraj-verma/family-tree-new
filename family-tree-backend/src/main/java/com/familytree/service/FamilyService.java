@@ -106,12 +106,10 @@ public class FamilyService {
         user.setImageUrl(userRequest.getImageUrl());
         user.setLocation(userRequest.getLocation() != null ? userRequest.getLocation() : family.getMemberIds().size());
         user.setIsActive(true);
+        user.setIsBloodRelative(true);
         
         user = userRepository.save(user);
-        
-        // Add to family
-        family.getMemberIds().add(user.getId());
-        
+
         // Handle relationships
         if (parentId != null && relationshipType != null) {
             handleRelationship(user, parentId, relationshipType, family);
@@ -132,7 +130,25 @@ public class FamilyService {
     private void handleRelationship(User newUser, String existingUserId, String relationshipType, Family family) {
         User existingUser = userRepository.findById(existingUserId)
             .orElseThrow(() -> new RuntimeException("Existing user not found"));
-        
+
+        if (!existingUser.getIsActive()) {
+            log.warn("Adding member to an inactive member is not allowed | ExitingUser:{} | New User: {}",
+                    existingUserId, newUser.getId());
+            newUser.setIsActive(false);
+            newUser.setInactiveReason("Adding member to an inactive member is not allowed");
+            userRepository.save(newUser);
+            throw new RuntimeException("Adding member to an inactive member is not allowed");
+        }
+
+        if (!existingUser.getIsBloodRelative() && !"child".equalsIgnoreCase(relationshipType)) {
+            log.warn("You can not add ancestors of members who are not related by blood | ExitingUser:{} | New User: {}",
+                    existingUserId, newUser.getId());
+            newUser.setIsActive(false);
+            newUser.setInactiveReason("Ancestor of member not related by blood");
+            userRepository.save(newUser);
+            throw new RuntimeException("You can not add ancestors of members who are not related by blood");
+        }
+
         Relationship relationship = new Relationship();
         
         switch (relationshipType.toLowerCase()) {
@@ -164,6 +180,10 @@ public class FamilyService {
                 newUser.getRelationships().getChildrenIds().add(existingUserId);
                 existingUser.getRelationships().getParentIds().add(newUser.getId());
                 existingUser.getRelationships().setMotherId(newUser.getId());
+
+                if (existingUser.getRelationships().getFatherId() != null) {
+                    newUser.setIsBloodRelative(false);
+                }
                 break;
                 
             case "father":
@@ -176,6 +196,10 @@ public class FamilyService {
                 newUser.getRelationships().getChildrenIds().add(existingUserId);
                 existingUser.getRelationships().getParentIds().add(newUser.getId());
                 existingUser.getRelationships().setFatherId(newUser.getId());
+
+                if (existingUser.getRelationships().getMotherId() != null) {
+                    newUser.setIsBloodRelative(false);
+                }
                 break;
                 
             case "parent":
@@ -188,6 +212,10 @@ public class FamilyService {
                     newUser.getRelationships().getChildrenIds().add(existingUserId);
                     existingUser.getRelationships().getParentIds().add(newUser.getId());
                     existingUser.getRelationships().setFatherId(newUser.getId());
+
+                    if (existingUser.getRelationships().getMotherId() != null) {
+                        newUser.setIsBloodRelative(false);
+                    }
                 } else if (newUser.getGender() == User.Gender.FEMALE) {
                     relationship.setFromId(newUser.getId());
                     relationship.setToId(existingUserId);
@@ -196,6 +224,10 @@ public class FamilyService {
                     newUser.getRelationships().getChildrenIds().add(existingUserId);
                     existingUser.getRelationships().getParentIds().add(newUser.getId());
                     existingUser.getRelationships().setMotherId(newUser.getId());
+
+                    if (existingUser.getRelationships().getFatherId() != null) {
+                        newUser.setIsBloodRelative(false);
+                    }
                 } else {
                     // Default to father for OTHER gender
                     relationship.setFromId(newUser.getId());
@@ -205,6 +237,10 @@ public class FamilyService {
                     newUser.getRelationships().getChildrenIds().add(existingUserId);
                     existingUser.getRelationships().getParentIds().add(newUser.getId());
                     existingUser.getRelationships().setFatherId(newUser.getId());
+
+                    if (existingUser.getRelationships().getMotherId() != null) {
+                        newUser.setIsBloodRelative(false);
+                    }
                 }
                 break;
                 
@@ -224,6 +260,8 @@ public class FamilyService {
                 reverseRelationship.setToId(existingUserId);
                 reverseRelationship.setType(Relationship.RelationType.SPOUSE);
                 family.getRelationships().add(reverseRelationship);
+
+                newUser.setIsBloodRelative(false);
                 break;
                 
             default:
@@ -232,7 +270,8 @@ public class FamilyService {
         
         // Save relationship
         family.getRelationships().add(relationship);
-        
+        family.getMemberIds().add(newUser.getId());
+
         // Update users
         userRepository.save(existingUser);
         userRepository.save(newUser);

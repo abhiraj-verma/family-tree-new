@@ -64,7 +64,7 @@ public class JwtTokenAuthenticationInterceptor implements HandlerInterceptor {
         Map<String, String> map = new HashMap<>();
         map.put("message", errorMessage);
         map.put("timestamp", String.valueOf(LocalDateTime.now()));
-        map.put("status", String.valueOf(HttpStatus.FORBIDDEN.value()));
+        map.put("status", "FAILURE");
         response.getWriter().write(objectMapper.writeValueAsString(map));
     }
 }
