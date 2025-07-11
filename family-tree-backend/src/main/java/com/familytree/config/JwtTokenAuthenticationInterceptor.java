@@ -1,6 +1,5 @@
 package com.familytree.config;
 
-import com.familytree.dto.UserContext;
 import com.familytree.repository.LoginDetailsRepository;
 import com.familytree.service.JwtTokenProviderService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,11 +60,11 @@ public class JwtTokenAuthenticationInterceptor implements HandlerInterceptor {
 
     private void buildFailureResponse(HttpServletResponse response, String errorMessage) throws IOException {
         response.setContentType("application/json");
-        response.setStatus(HttpStatus.BAD_REQUEST.value());
+        response.setStatus(HttpStatus.FORBIDDEN.value());
         Map<String, String> map = new HashMap<>();
         map.put("message", errorMessage);
         map.put("timestamp", String.valueOf(LocalDateTime.now()));
-        map.put("status", String.valueOf(HttpStatus.BAD_REQUEST.value()));
+        map.put("status", String.valueOf(HttpStatus.FORBIDDEN.value()));
         response.getWriter().write(objectMapper.writeValueAsString(map));
     }
 }

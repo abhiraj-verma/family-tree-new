@@ -25,11 +25,11 @@ public class AppConfig implements WebMvcConfigurer {
 
     private String[] apisForJwtInterceptor() {
         List<String> list = new ArrayList<>();
-        list.add("/api/family/**");
-        list.add("/api/images/**");
-        list.add("/api/relationships/**");
-        list.add("/api/users/**");
-        list.add("/api/public/family/**");
+        list.add("/family/**");
+        list.add("/images/**");
+        list.add("/relationships/**");
+        list.add("/users/**");
+        list.add("/public/family/**");
         return list.toArray(new String[list.size()]);
     }
 }
